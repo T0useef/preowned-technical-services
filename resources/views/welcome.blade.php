@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <x-favicon />
   <title>Preowned Technical Services</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -15,7 +16,7 @@
   <header class="hero-section">
     <nav class="navbar navbar-expand-lg navbar-dark fixed-top site-navbar">
       <div class="container">
-        <a class="navbar-brand fw-bold" href="javascript:void(0)">TechService<span>Pro</span></a>
+        <x-site-logo href="{{ route('welcome') }}" />
         <button class="navbar-toggler border-0 shadow-none" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav" aria-controls="mainNav" aria-expanded="false" aria-label="Toggle navigation">
           <span class="navbar-toggler-icon"></span>
         </button>
@@ -293,7 +294,7 @@
       </div>
     </section>
 
-    <section id="partners" class="section-pad partners-section" aria-labelledby="partners-heading">
+    <section id="partners" class="section-pad partners-section d-none" aria-labelledby="partners-heading">
       <div class="container">
         <div class="row justify-content-center text-center mb-4 mb-lg-5">
           <div class="col-lg-10 col-xl-9">

@@ -32,8 +32,22 @@
     box-shadow: 0 8px 24px rgba(8, 0, 89, 0.28);
   }
   
-  .navbar-brand span {
-    color: var(--brand-gold);
+  .navbar-brand,
+  .footer-brand {
+    padding: 0;
+    line-height: 0;
+  }
+
+  .site-logo {
+    height: 42px;
+    width: auto;
+    display: block;
+    object-fit: contain;
+    filter: invert(1) hue-rotate(180deg);
+  }
+
+  .footer-brand .site-logo {
+    height: 48px;
   }
   
   .nav-link {
@@ -1203,14 +1217,6 @@
   
   .footer-brand {
     display: inline-block;
-    color: #fff;
-    font-size: 1.55rem;
-    font-weight: 800;
-    letter-spacing: 0.01em;
-  }
-  
-  .footer-brand span {
-    color: var(--brand-gold);
   }
   
   .footer-text {
@@ -1481,8 +1487,8 @@
       max-width: 94%;
     }
   
-    .footer-brand {
-      font-size: 1.4rem;
+    .footer-brand .site-logo {
+      height: 40px;
     }
   
     .footer-bottom {

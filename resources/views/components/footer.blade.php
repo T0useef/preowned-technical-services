@@ -2,7 +2,7 @@
     <div class="container">
       <div class="row g-4 g-lg-5 align-items-start">
         <div class="col-lg-4">
-          <a class="footer-brand" href="index.html">TechService<span>Pro</span></a>
+          <x-site-logo variant="footer" />
           <p class="footer-text mt-3 mb-3">Modern technical services company delivering premium construction, maintenance, and plumbing execution with reliability and speed.</p>
           <div class="footer-socials" aria-label="Social links">
             <a href="#" aria-label="Facebook"><i class="fa-brands fa-facebook-f"></i></a>
