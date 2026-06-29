@@ -63,7 +63,7 @@
               <span class="hero-highlight-label">Client Satisfaction</span>
             </div>
           </div>
-          <a href="services.html" class="btn btn-hero">Explore More</a>
+          <a href="{{ route('services') }}" class="btn btn-hero">Explore More</a>
         </div>
       </div>
     </div>
@@ -289,7 +289,7 @@
           </div>
         </div>
         <div class="text-center mt-4 mt-lg-5">
-          <a href="projects.html" class="btn btn-hero projects-cta-btn">Explore All Projects <i class="fa-solid fa-arrow-right-long ms-2"></i></a>
+          <a href="{{ route('projects') }}" class="btn btn-hero projects-cta-btn">Explore All Projects <i class="fa-solid fa-arrow-right-long ms-2"></i></a>
         </div>
       </div>
     </section>
