@@ -38,7 +38,7 @@
           <ul class="footer-links">
             <li>
               <a href="https://maps.app.goo.gl/pKUCy7M5p1HXK2K88" target="_blank">
-                <i class="fa-solid fa-location-dot"></i> Office #2403, Damac Smart Height Tecom - Dubai - United Arab Emirates
+                <i class="fa-solid fa-location-dot"></i> Office # 2403, Damac Smart Height Tecom - Dubai - United Arab Emirates
               </a>
             </li>
             <li>
