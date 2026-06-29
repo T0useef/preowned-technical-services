@@ -35,16 +35,28 @@
 
         <div class="col-lg-3">
           <h3 class="footer-title">Contact</h3>
-          <ul class="footer-contact">
-            <li><i class="fa-solid fa-location-dot"></i> Business Bay, Dubai, UAE</li>
-            <li><i class="fa-solid fa-phone"></i> +92 300 0000000</li>
-            <li><i class="fa-solid fa-envelope"></i> info@techservicepro.com</li>
+          <ul class="footer-links">
+            <li>
+              <a href="https://maps.app.goo.gl/pKUCy7M5p1HXK2K88" target="_blank">
+                <i class="fa-solid fa-location-dot"></i> Office #2403, Damac Smart Height Tecom - Dubai - United Arab Emirates
+              </a>
+            </li>
+            <li>
+              <a href="tel:+971568144848" target="_blank">
+                <i class="fa-solid fa-phone"></i> +971 56 814 4848
+              </a>
+            </li>
+            <li>
+              <a href="mailto:info@preownedtechnicalservices.com" target="_blank">
+                <i class="fa-solid fa-envelope"></i> info@preownedtechnicalservices.com
+              </a>
+            </li>
           </ul>
         </div>
       </div>
 
       <div class="footer-bottom d-flex flex-column flex-md-row justify-content-between align-items-center gap-2">
-        <p class="mb-0">© 2026 TechServicePro. All rights reserved.</p>
+        <p class="mb-0">© 2026 Preowned Technical Services. All rights reserved.</p>
         <p class="mb-0">Built with premium technical standards.</p>
       </div>
     </div>

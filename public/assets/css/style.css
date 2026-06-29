@@ -1247,6 +1247,7 @@
   .footer-contact li {
     color: rgba(255, 255, 255, 0.85);
     font-size: 0.93rem;
+    text-decoration: none;
   }
   
   .footer-links a {
@@ -1287,6 +1288,8 @@
     border: 1px solid rgba(234, 188, 115, 0.45);
     background: rgba(234, 188, 115, 0.15);
     transition: transform 0.22s ease, background-color 0.22s ease, color 0.22s ease;
+
+    text-decoration: none;
   }
   
   .footer-socials a:hover {
