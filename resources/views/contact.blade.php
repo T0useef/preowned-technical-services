@@ -97,10 +97,10 @@
               <h2 id="contact-page-heading">Contact information</h2>
               <p class="mb-4">We are available for site visits, technical consultations, and project planning support.</p>
               <ul class="contact-info-list">
-                <li><i class="fa-solid fa-location-dot"></i> Business Bay, Dubai, UAE</li>
-                <li><i class="fa-solid fa-phone"></i> +971 50 000 0000</li>
-                <li><i class="fa-solid fa-envelope"></i> info@techservicepro.com</li>
-                <li><i class="fa-solid fa-clock"></i> Mon - Sat: 9:00 AM to 7:00 PM</li>
+                <li><i class="fa-solid fa-location-dot"></i> Office # 2403, Damac Smart Height Tecom - Dubai - United Arab Emirates</li>
+                <li><i class="fa-solid fa-phone"></i> +971 56 814 4848</li>
+                <li><i class="fa-solid fa-envelope"></i> info@preownedtechnicalservices.com</li>
+                <li><i class="fa-solid fa-clock"></i> Mon - Sat: 10:00 AM to 7:00 PM</li>
               </ul>
             </article>
           </div>
