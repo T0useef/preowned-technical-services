@@ -1,10 +1,9 @@
 <aside class="sidebar" id="sidebar">
     <div class="logo-area">
-      <div class="logo-icon"><i class="fa-solid fa-screwdriver-wrench"></i></div>
-      <div class="logo-title">
-        <h6>Preowned Technical Services</h6>
-        <span>Admin Dashboard</span>
-      </div>
+      <a href="{{ route('dashboard') }}" class="sidebar-logo-link">
+        <img src="{{ asset('assets/images/pts-logo.png') }}" alt="Preowned Technical Services" class="sidebar-logo">
+      </a>
+      <span class="sidebar-logo-subtitle">Admin Dashboard</span>
     </div>
 
     <div class="menu-title">Main Navigation</div>

@@ -14,16 +14,12 @@
     :root {
       --brand-gold: #eabc73;
       --brand-navy: #080059;
-      --navy-soft: #1d1396;
-      --surface: rgba(255, 255, 255, 0.72);
-      --surface-2: rgba(255, 255, 255, 0.9);
+      --surface-2: rgba(255, 255, 255, 0.92);
       --text-main: #22274a;
       --text-muted: #71749a;
       --radius-xl: 24px;
-      --radius-lg: 16px;
       --radius-md: 12px;
       --shadow-soft: 0 16px 40px rgba(8, 0, 89, 0.13);
-      --shadow-strong: 0 24px 50px rgba(8, 0, 89, 0.2);
     }
 
     * {
@@ -45,141 +41,31 @@
     }
 
     .login-shell {
-      width: min(1060px, 100%);
-      min-height: 620px;
+      width: min(430px, 100%);
       border-radius: var(--radius-xl);
-      overflow: hidden;
-      background: var(--surface);
+      background: var(--surface-2);
       backdrop-filter: blur(14px);
       border: 1px solid rgba(255, 255, 255, 0.7);
       box-shadow: var(--shadow-soft);
-      display: grid;
-      grid-template-columns: 1.05fr 1fr;
+      padding: clamp(1.5rem, 4vw, 2.25rem);
     }
 
-    .brand-panel {
-      background: linear-gradient(150deg, var(--brand-navy), var(--navy-soft) 62%, #2c1fbe 100%);
-      color: #fff;
-      padding: clamp(1.25rem, 2.8vw, 2rem);
-      position: relative;
+    .login-logo {
       display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-    }
-
-    .brand-panel::before,
-    .brand-panel::after {
-      content: "";
-      position: absolute;
-      border-radius: 50%;
-      background: rgba(255, 255, 255, 0.12);
-    }
-
-    .brand-panel::before {
-      width: 200px;
-      height: 200px;
-      top: -72px;
-      right: -72px;
-    }
-
-    .brand-panel::after {
-      width: 170px;
-      height: 170px;
-      left: -72px;
-      bottom: -72px;
-    }
-
-    .logo-wrap {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.7rem;
-      background: rgba(255, 255, 255, 0.13);
-      border: 1px solid rgba(255, 255, 255, 0.24);
-      border-radius: 14px;
-      padding: 0.62rem 0.8rem;
-      width: fit-content;
-      position: relative;
-      z-index: 2;
-    }
-
-    .logo-badge {
-      width: 40px;
-      height: 40px;
-      border-radius: 12px;
-      display: grid;
-      place-items: center;
-      color: var(--brand-navy);
-      background: linear-gradient(130deg, var(--brand-gold), #f5d49e);
-      box-shadow: 0 8px 18px rgba(234, 188, 115, 0.36);
-    }
-
-    .logo-text h6 {
-      margin: 0;
-      font-size: 0.93rem;
-      font-weight: 700;
-    }
-
-    .logo-text p {
-      margin: 0;
-      font-size: 0.73rem;
-      color: rgba(255, 255, 255, 0.82);
-    }
-
-    .brand-copy {
-      position: relative;
-      z-index: 2;
-      margin-top: 1.3rem;
-    }
-
-    .brand-copy h2 {
-      margin: 0 0 0.7rem;
-      font-size: clamp(1.35rem, 2vw, 2rem);
-      line-height: 1.3;
-      letter-spacing: -0.2px;
-      font-weight: 800;
-    }
-
-    .brand-copy p {
-      margin: 0;
-      color: rgba(255, 255, 255, 0.84);
-      font-size: 0.93rem;
-      max-width: 430px;
-    }
-
-    .feature-list {
-      list-style: none;
-      margin: 1.1rem 0 0;
-      padding: 0;
-      display: grid;
-      gap: 0.6rem;
-      position: relative;
-      z-index: 2;
-    }
-
-    .feature-list li {
-      display: flex;
-      gap: 0.6rem;
-      align-items: center;
-      font-size: 0.86rem;
-      color: rgba(255, 255, 255, 0.92);
-    }
-
-    .feature-list i {
-      color: var(--brand-gold);
-      width: 18px;
-      text-align: center;
-    }
-
-    .login-panel {
-      padding: clamp(1.25rem, 2.8vw, 2.2rem);
-      display: flex;
-      align-items: center;
       justify-content: center;
-      background: var(--surface-2);
+      margin-bottom: 1.35rem;
     }
 
-    .login-card {
-      width: min(430px, 100%);
+    .login-logo a {
+      display: inline-block;
+      line-height: 0;
+    }
+
+    .login-logo img {
+      height: 56px;
+      width: auto;
+      display: block;
+      object-fit: contain;
     }
 
     .login-eyebrow {
@@ -270,23 +156,6 @@
       box-shadow: 0 16px 32px rgba(234, 188, 115, 0.45);
     }
 
-    .form-check-input:checked {
-      background-color: var(--brand-navy);
-      border-color: var(--brand-navy);
-    }
-
-    .link-muted {
-      color: #5f638c;
-      text-decoration: none;
-      font-size: 0.84rem;
-      font-weight: 600;
-    }
-
-    .link-muted:hover {
-      color: var(--brand-navy);
-      text-decoration: underline;
-    }
-
     .foot-note {
       margin-top: 1rem;
       color: #868ab2;
@@ -294,95 +163,57 @@
       font-size: 0.78rem;
     }
 
-    @media (max-width: 991.98px) {
-      .login-shell {
-        grid-template-columns: 1fr;
-      }
-
-      .brand-panel {
-        min-height: 280px;
-      }
-    }
-
     @media (max-width: 575.98px) {
       body {
         padding: 0.55rem;
       }
 
-      .login-panel,
-      .brand-panel {
-        padding: 1rem;
+      .login-shell {
+        padding: 1.25rem;
       }
 
-      .brand-copy h2 {
-        font-size: 1.22rem;
-      }
-
-      .feature-list {
-        gap: 0.45rem;
+      .login-logo img {
+        height: 48px;
       }
     }
   </style>
 </head>
 <body>
   <section class="login-shell">
-    <aside class="brand-panel">
-      <div>
-        <div class="logo-wrap">
-          <div class="logo-badge">
-            <i class="fa-solid fa-screwdriver-wrench"></i>
-          </div>
-          <div class="logo-text">
-            <h6>Preowned Technical Services</h6>
-          </div>
-        </div>
-
-        <div class="brand-copy">
-          <h2>Welcome back to your operations command center</h2>
-          <p>
-            Sign in to manage projects, monitor field teams, track invoices, and optimize technical service delivery.
-          </p>
-          <ul class="feature-list">
-            <li><i class="fa-solid fa-circle-check"></i>Real-time service and work order visibility</li>
-            <li><i class="fa-solid fa-circle-check"></i>Revenue and performance analytics dashboard</li>
-            <li><i class="fa-solid fa-circle-check"></i>Smart scheduling and team assignment workflows</li>
-          </ul>
-        </div>
-      </div>
-    </aside>
-
-    <div class="login-panel">
-      <div class="login-card">
-        <span class="login-eyebrow">Secure Access</span>
-        <h1 class="login-title">Sign In</h1>
-        <p class="login-subtitle">Use your account credentials to access the dashboard.</p>
-
-        <form id="loginForm" action="index.html" method="get" novalidate>
-          <div class="mb-3">
-            <label for="email" class="form-label">Email Address</label>
-            <input type="email" class="form-control" id="email" placeholder="admin@techservicepro.com" required>
-            <div class="text-danger" id="email-error"></div>
-          </div>
-
-          <div class="mb-3">
-            <label for="password" class="form-label">Password</label>
-            <div class="password-wrap">
-              <input type="password" class="form-control" id="password" placeholder="Enter password" required minlength="6">
-              <button class="password-toggle-btn" type="button" id="togglePassword" aria-label="Toggle password visibility">
-                <i class="fa-regular fa-eye"></i>
-              </button>
-            </div>
-            <div class="text-danger" id="password-error"></div>
-          </div>
-
-          <button type="submit" class="btn btn-gold" id="loginBtn">
-            <span class="btn-text">Login to Dashboard</span>
-          </button>
-        </form>
-
-        <p class="foot-note">Protected access for authorized team members only.</p>
-      </div>
+    <div class="login-logo">
+      <a href="{{ route('welcome') }}">
+        <img src="{{ asset('assets/images/pts-logo.png') }}" alt="Preowned Technical Services">
+      </a>
     </div>
+
+    <span class="login-eyebrow">Secure Access</span>
+    <h1 class="login-title">Sign In</h1>
+    <p class="login-subtitle">Use your account credentials to access the dashboard.</p>
+
+    <form id="loginForm" action="index.html" method="get" novalidate>
+      <div class="mb-3">
+        <label for="email" class="form-label">Email Address</label>
+        <input type="email" class="form-control" id="email" placeholder="admin@techservicepro.com" required>
+        <div class="text-danger" id="email-error"></div>
+      </div>
+
+      <div class="mb-3">
+        <label for="password" class="form-label">Password</label>
+        <div class="password-wrap">
+          <input type="password" class="form-control" id="password" placeholder="Enter password" required minlength="6">
+          <button class="password-toggle-btn" type="button" id="togglePassword" aria-label="Toggle password visibility">
+            <i class="fa-regular fa-eye"></i>
+          </button>
+        </div>
+        <div class="text-danger" id="password-error"></div>
+      </div>
+
+      <button type="submit" class="btn btn-gold" id="loginBtn">
+        <span class="btn-text">Login to Dashboard</span>
+      </button>
+    </form>
+
+    <p class="foot-note">Protected access for authorized team members only.</p>
   </section>
 
   <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
