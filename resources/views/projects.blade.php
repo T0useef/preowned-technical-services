@@ -58,7 +58,7 @@
         <div class="row g-4 projects-grid projects-list-grid">
           <div class="col-12 col-sm-6 col-lg-4">
             <article class="project-card">
-              <img src="https://thumbs.dreamstime.com/b/fruit-vegetables-market-dubai-196483346.jpg" alt="Vegetable and fruit market project in Dubai" class="project-card-img" loading="lazy">
+              <img src="{{asset('assets/images/vegetable-market.jpg')}}" alt="Vegetable and fruit market project in Dubai" class="project-card-img" loading="lazy">
               <div class="project-card-overlay">
                 <h3>Vegetable & Fruit Market</h3>
                 <p><i class="fa-solid fa-location-dot"></i> Dubai, UAE</p>
@@ -69,55 +69,55 @@
 
           <div class="col-12 col-sm-6 col-lg-4">
             <article class="project-card">
-              <img src="https://mediaoffice.ae/-/media/2021/jan/17-01/05/1017012021-hisham-1.jpg?h=3712&w=5568&hash=68360692C0A5ACEDA2D4575E2953C2D4" alt="Al Lisali marriage hall project in Abu Dhabi" class="project-card-img" loading="lazy">
+              <img src="{{asset('assets/images/dubai-municipality-office.jpg')}}" alt="Dubai Municipality Office project in Dubai" class="project-card-img" loading="lazy">
               <div class="project-card-overlay">
-                <h3>Al Lisali Marriage</h3>
-                <p><i class="fa-solid fa-location-dot"></i> Abu Dhabi, UAE</p>
-                <p><i class="fa-solid fa-screwdriver-wrench"></i> Marina Build</p>
+                <h3>Dubai Municipality Office</h3>
+                <p><i class="fa-solid fa-location-dot"></i> Dubai, UAE</p>
+                <p><i class="fa-solid fa-building"></i> Maintenance of Offices</p>
               </div>
             </article>
           </div>
 
           <div class="col-12 col-sm-6 col-lg-4">
             <article class="project-card">
-              <img src="https://images.unsplash.com/photo-1621905252439-4e8f4a16f5f6?auto=format&fit=crop&w=1400&q=80" alt="CityCare retrofit utility upgrade project" class="project-card-img" loading="lazy">
+              <img src="{{asset('assets/images/office-interior-fitout.jpg')}}" alt="Office Interior Fit-Out & Maintenance project" class="project-card-img" loading="lazy">
               <div class="project-card-overlay">
-                <h3>CityCare Retrofit</h3>
+                <h3>Office Interior Fit-Out & Maintenance</h3>
+                <p><i class="fa-solid fa-location-dot"></i> Dubai, UAE</p>
+                <p><i class="fa-solid fa-screwdriver-wrench"></i> Office Interior Fit-Out & Maintenance</p>
+              </div>
+            </article>
+          </div>
+
+          <div class="col-12 col-sm-6 col-lg-4">
+            <article class="project-card">
+              <img src="{{asset('assets/images/al-mamzar-park.jpg')}}" alt="Al Mamzar Park Renovation project" class="project-card-img" loading="lazy">
+              <div class="project-card-overlay">
+                <h3>Al Mamzar Park Renovation</h3>
                 <p><i class="fa-solid fa-location-dot"></i> Sharjah, UAE</p>
-                <p><i class="fa-solid fa-faucet-drip"></i> Utility Upgrade</p>
+                <p><i class="fa-solid fa-parking"></i> Al Mamzar Park Renovation</p>
               </div>
             </article>
           </div>
 
           <div class="col-12 col-sm-6 col-lg-4">
             <article class="project-card">
-              <img src="https://images.unsplash.com/photo-1489515217757-5fd1be406fef?auto=format&fit=crop&w=1400&q=80" alt="Premium villas residential project" class="project-card-img" loading="lazy">
+              <img src="{{asset('assets/images/al-lisaili-hall.jpg')}}" alt="Al Lisaili Hall project" class="project-card-img" loading="lazy">
               <div class="project-card-overlay">
-                <h3>Premium Villas</h3>
-                <p><i class="fa-solid fa-location-dot"></i> Jumeirah, UAE</p>
-                <p><i class="fa-solid fa-house"></i> Residential Delivery</p>
+                <h3>Al Lisaili Hall</h3>
+                <p><i class="fa-solid fa-location-dot"></i> Dubai, UAE</p>
+                <p><i class="fa-solid fa-shield-halved"></i> Al Lisaili Hall Maintenance</p>
               </div>
             </article>
           </div>
 
           <div class="col-12 col-sm-6 col-lg-4">
             <article class="project-card">
-              <img src="https://images.unsplash.com/photo-1581092580497-e0d23cbdf1dc?auto=format&fit=crop&w=1800&q=80" alt="Logistics terminal systems integration project" class="project-card-img" loading="lazy">
+              <img src="{{asset('assets/images/jabel-ali-jogging.jpg')}}" alt="Jabel Ali Jogging Track project" class="project-card-img" loading="lazy">
               <div class="project-card-overlay">
-                <h3>Logistics Terminal</h3>
-                <p><i class="fa-solid fa-location-dot"></i> Jebel Ali, UAE</p>
-                <p><i class="fa-solid fa-truck-ramp-box"></i> Systems Integration</p>
-              </div>
-            </article>
-          </div>
-
-          <div class="col-12 col-sm-6 col-lg-4">
-            <article class="project-card">
-              <img src="https://images.unsplash.com/photo-1581094271901-8022df4466f9?auto=format&fit=crop&w=1800&q=80" alt="Smart campus infrastructure project in Al Ain" class="project-card-img" loading="lazy">
-              <div class="project-card-overlay">
-                <h3>Smart Campus</h3>
-                <p><i class="fa-solid fa-location-dot"></i> Al Ain, UAE</p>
-                <p><i class="fa-solid fa-microchip"></i> Intelligent Infrastructure</p>
+                <h3>Jabel Ali Jogging Track</h3>
+                <p><i class="fa-solid fa-location-dot"></i> Dubai, UAE</p>
+                <p><i class="fa-solid fa-person-running"></i> Jabel Ali Jogging Track</p>
               </div>
             </article>
           </div>

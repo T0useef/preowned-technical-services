@@ -36,7 +36,7 @@
     <div class="container about-page-hero-content">
       <div class="row min-vh-70 align-items-center">
         <div class="col-lg-9 col-xl-8">
-          <p class="hero-tagline mb-2">About TechServicePro</p>
+          <p class="hero-tagline mb-2">About Preowned Technical Services</p>
           <h1 class="about-page-title mb-3">A modern technical services team focused on quality, speed, and long-term trust.</h1>
           <p class="about-page-subtitle mb-0">We deliver construction, maintenance, plumbing, electrical, and interior services through clear communication and premium workmanship.</p>
         </div>
@@ -52,7 +52,7 @@
             <div class="ceo-frame-wrap">
               <div class="ceo-frame-glow" aria-hidden="true"></div>
               <figure class="ceo-frame">
-                <img src="https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=900&q=80" alt="CEO portrait" class="ceo-image" loading="lazy">
+                <img src="{{asset('assets/images/ceo.jpeg')}}" alt="CEO portrait" class="ceo-image" loading="lazy">
               </figure>
             </div>
           </div>
@@ -60,9 +60,9 @@
             <article class="ceo-message-card">
               <p class="section-kicker mb-2"><span class="section-kicker-inner">Message From Our CEO</span></p>
               <h2 id="ceo-message-heading">Building trust through quality technical execution.</h2>
-              <p>At TechServicePro, our mission is simple: deliver high-standard technical services with clear communication, dependable timelines, and workmanship our clients can rely on.</p>
+              <p>At Preowned Technical Services, our mission is simple: deliver high-standard technical services with clear communication, dependable timelines, and workmanship our clients can rely on.</p>
               <p>Every project we accept reflects our commitment to professionalism, safety, and long-term value. We are proud to serve homes, businesses, and institutions that demand modern service excellence.</p>
-              <p class="mb-0 ceo-signature">— Muhammad Touseef, Chief Executive Officer</p>
+              <p class="mb-0 ceo-signature">— Zahid Maqsood, Chief Executive Officer</p>
             </article>
           </div>
         </div>
@@ -75,7 +75,7 @@
           <div class="col-lg-6">
             <article class="about-page-panel h-100">
               <h2>Who We Are</h2>
-              <p>TechServicePro is a user-focused technical services provider helping residential and commercial clients complete projects efficiently and safely.</p>
+              <p>Preowned Technical Services is a user-focused technical services provider helping residential and commercial clients complete projects efficiently and safely.</p>
               <p class="mb-0">Our multidisciplinary teams manage planning, execution, and ongoing support so clients get one reliable partner for their technical needs.</p>
             </article>
           </div>
