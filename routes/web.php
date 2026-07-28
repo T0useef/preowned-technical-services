@@ -29,9 +29,7 @@ Route::get('/contact', function () {
     return view('contact');
 })->name('contact');
 
-Route::get('/quotation-template', function () {
-    return view('quotation-template');
-})->name('quotation.template');
+Route::get('/quotation-pdf-preview', [QuotationController::class, 'samplePreview'])->name('quotation.pdf.preview');
 
 Route::get('/salary-slip/preview', [PaymentController::class, 'salarySlipPreview'])->name('salary-slip.preview');
 
@@ -76,8 +74,11 @@ Route::middleware('auth')->group(function () {
 
     // quotations
     Route::get('/dashboard/quotations', [QuotationController::class, 'index'])->name('dashboard.quotations.index');
-    Route::get('/dashboard/quotations/{quotation}', [QuotationController::class, 'show'])->name('dashboard.quotations.show');
+    Route::get('/dashboard/quotations/create', [QuotationController::class, 'create'])->name('dashboard.quotations.create');
+    Route::post('/dashboard/quotations/preview', [QuotationController::class, 'preview'])->name('dashboard.quotations.preview');
     Route::post('/dashboard/quotations', [QuotationController::class, 'store'])->name('dashboard.quotations.store');
+    Route::get('/dashboard/quotations/{quotation}/edit', [QuotationController::class, 'edit'])->name('dashboard.quotations.edit');
+    Route::get('/dashboard/quotations/{quotation}', [QuotationController::class, 'show'])->name('dashboard.quotations.show');
     Route::put('/dashboard/quotations/{quotation}', [QuotationController::class, 'update'])->name('dashboard.quotations.update');
     Route::delete('/dashboard/quotations/{quotation}', [QuotationController::class, 'destroy'])->name('dashboard.quotations.destroy');
 

@@ -30,6 +30,24 @@ class QuotationController extends Controller
         ]);
     }
 
+    public function create()
+    {
+        return view('quotations.form', [
+            'quotation' => null,
+            'pageTitle' => 'Add Quotation',
+        ]);
+    }
+
+    public function edit(Quotation $quotation)
+    {
+        $quotation->load('items');
+
+        return view('quotations.form', [
+            'quotation' => $quotation,
+            'pageTitle' => 'Edit Quotation',
+        ]);
+    }
+
     public function store(Request $request)
     {
         $validated = $this->validateQuotation($request);
@@ -38,6 +56,9 @@ class QuotationController extends Controller
             $quotation = Quotation::create([
                 'quotation_number' => $this->generateQuotationNumber(),
                 'company_name' => $validated['company_name'],
+                'contact_person' => $validated['contact_person'] ?? null,
+                'contact_phone' => $validated['contact_phone'] ?? null,
+                'subject' => $validated['subject'] ?? null,
                 'quotation_date' => $validated['quotation_date'],
                 'notes' => $validated['notes'] ?? null,
                 'total_amount' => $this->calculateTotal($validated['items']),
@@ -63,6 +84,9 @@ class QuotationController extends Controller
         $quotation = DB::transaction(function () use ($quotation, $validated) {
             $quotation->update([
                 'company_name' => $validated['company_name'],
+                'contact_person' => $validated['contact_person'] ?? null,
+                'contact_phone' => $validated['contact_phone'] ?? null,
+                'subject' => $validated['subject'] ?? null,
                 'quotation_date' => $validated['quotation_date'],
                 'notes' => $validated['notes'] ?? null,
                 'total_amount' => $this->calculateTotal($validated['items']),
@@ -82,6 +106,46 @@ class QuotationController extends Controller
         ]);
     }
 
+    public function preview(Request $request)
+    {
+        $validated = $this->validateQuotation($request);
+
+        $quotationNumber = $request->filled('quotation_number')
+            ? $request->string('quotation_number')->toString()
+            : $this->generateQuotationNumber();
+
+        $quotation = $this->makePreviewQuotation($validated, $quotationNumber);
+        $pdf = $this->makeQuotationPdf($quotation);
+
+        return $pdf->stream('quotation-preview.pdf');
+    }
+
+    public function samplePreview()
+    {
+        $sampleItems = [
+            ['item_type' => 'main_item', 'display_number' => '1', 'description' => 'Plumbing installation for ground floor washrooms', 'unit' => 'Job', 'qty' => 1, 'unit_price' => 4500],
+            ['item_type' => 'main_item', 'display_number' => '2', 'description' => 'Electrical wiring and switchboard upgrade', 'unit' => 'Job', 'qty' => 1, 'unit_price' => 6250],
+            ['item_type' => 'sub_heading', 'display_number' => '3', 'description' => 'HVAC Works', 'unit' => null, 'qty' => 0, 'unit_price' => 0],
+            ['item_type' => 'sub_item', 'display_number' => '3.1', 'description' => 'HVAC duct cleaning and maintenance', 'unit' => 'Nos', 'qty' => 2, 'unit_price' => 2000],
+            ['item_type' => 'sub_item', 'display_number' => '3.2', 'description' => 'Labour and site finishing works', 'unit' => 'Lot', 'qty' => 1, 'unit_price' => 4000],
+        ];
+
+        $validated = [
+            'company_name' => 'M/s. DSCA Contracting Building LLC',
+            'contact_person' => 'Ms. Dalia Abdullah Ghoush',
+            'contact_phone' => '+971 52 738 2675',
+            'subject' => 'Plumbing, electrical and HVAC maintenance works',
+            'quotation_date' => now()->format('Y-m-d'),
+            'notes' => 'Site survey completed. Materials and labour included as per agreed scope.',
+            'items' => $sampleItems,
+        ];
+
+        $quotation = $this->makePreviewQuotation($validated, 'QUO-' . now()->format('Y') . '-0001');
+        $pdf = $this->makeQuotationPdf($quotation);
+
+        return $pdf->stream('quotation-sample-preview.pdf');
+    }
+
     public function destroy(Quotation $quotation)
     {
         $this->deleteQuotationPdf($quotation->file_path);
@@ -96,12 +160,18 @@ class QuotationController extends Controller
     {
         $validated = $request->validate([
             'company_name' => 'required|string|max:255',
+            'contact_person' => 'nullable|string|max:255',
+            'contact_phone' => 'nullable|string|max:50',
+            'subject' => 'nullable|string|max:500',
             'quotation_date' => 'required|date',
             'notes' => 'nullable|string|max:2000',
             'items' => 'required|array|min:1',
+            'items.*.item_type' => 'nullable|in:main_item,sub_heading,sub_item',
+            'items.*.display_number' => 'nullable|string|max:20',
             'items.*.description' => 'required|string|max:500',
-            'items.*.qty' => 'required|numeric|min:0.01',
-            'items.*.unit_price' => 'required|numeric|min:0',
+            'items.*.unit' => 'nullable|string|max:50',
+            'items.*.qty' => 'nullable|numeric|min:0',
+            'items.*.unit_price' => 'nullable|numeric|min:0',
         ]);
 
         if (empty($validated['items'])) {
@@ -110,7 +180,65 @@ class QuotationController extends Controller
             ]);
         }
 
+        $validated['items'] = $this->normalizeItems($validated['items']);
+
+        foreach ($validated['items'] as $index => $item) {
+            if (($item['item_type'] ?? 'main_item') === 'sub_heading') {
+                continue;
+            }
+
+            if ((float) ($item['qty'] ?? 0) < 0.01) {
+                throw ValidationException::withMessages([
+                    "items.{$index}.qty" => 'Quantity must be at least 0.01 for priced items.',
+                ]);
+            }
+        }
+
         return $validated;
+    }
+
+    private function normalizeItems(array $items): array
+    {
+        $topLevel = 0;
+        $subIndex = 0;
+        $inHeading = false;
+        $normalized = [];
+
+        foreach (array_values($items) as $item) {
+            $type = $item['item_type'] ?? 'main_item';
+            if (!in_array($type, ['main_item', 'sub_heading', 'sub_item'], true)) {
+                $type = 'main_item';
+            }
+
+            if ($type === 'sub_item' && !$inHeading) {
+                $type = 'main_item';
+            }
+
+            if ($type === 'main_item' || $type === 'sub_heading') {
+                $topLevel++;
+                $subIndex = 0;
+                $inHeading = $type === 'sub_heading';
+                $displayNumber = (string) $topLevel;
+            } else {
+                $subIndex++;
+                $displayNumber = $topLevel . '.' . $subIndex;
+            }
+
+            $isHeading = $type === 'sub_heading';
+            $qty = $isHeading ? 0.0 : (float) ($item['qty'] ?? 0);
+            $unitPrice = $isHeading ? 0.0 : (float) ($item['unit_price'] ?? 0);
+
+            $normalized[] = [
+                'item_type' => $type,
+                'display_number' => $displayNumber,
+                'description' => $item['description'],
+                'unit' => $isHeading ? null : ($item['unit'] ?? null),
+                'qty' => $qty,
+                'unit_price' => $unitPrice,
+            ];
+        }
+
+        return $normalized;
     }
 
     private function syncItems(Quotation $quotation, array $items): void
@@ -121,6 +249,9 @@ class QuotationController extends Controller
 
             $quotation->items()->create([
                 'description' => $item['description'],
+                'item_type' => $item['item_type'] ?? 'main_item',
+                'display_number' => $item['display_number'] ?? null,
+                'unit' => $item['unit'] ?? null,
                 'qty' => $qty,
                 'unit_price' => $unitPrice,
                 'total' => round($qty * $unitPrice, 2),
@@ -134,6 +265,10 @@ class QuotationController extends Controller
         $total = 0;
 
         foreach ($items as $item) {
+            if (($item['item_type'] ?? 'main_item') === 'sub_heading') {
+                continue;
+            }
+
             $total += round((float) $item['qty'] * (float) $item['unit_price'], 2);
         }
 
@@ -156,16 +291,74 @@ class QuotationController extends Controller
             $this->deleteQuotationPdf($quotation->file_path);
         }
 
-        $validTill = Carbon::parse($quotation->quotation_date)->addDays(15);
-
-        $pdf = Pdf::loadView('quotations.quotation-pdf', [
-            'quotation' => $quotation,
-            'validTill' => $validTill,
-        ])->setPaper('a4', 'portrait');
+        $pdf = $this->makeQuotationPdf($quotation);
 
         File::put($absoluteFilePath, $pdf->output());
 
         $quotation->update(['file_path' => $relativeFilePath]);
+    }
+
+    private function makePreviewQuotation(array $validated, string $quotationNumber): Quotation
+    {
+        $quotation = new Quotation([
+            'quotation_number' => $quotationNumber,
+            'company_name' => $validated['company_name'],
+            'contact_person' => $validated['contact_person'] ?? null,
+            'contact_phone' => $validated['contact_phone'] ?? null,
+            'subject' => $validated['subject'] ?? null,
+            'quotation_date' => $validated['quotation_date'],
+            'notes' => $validated['notes'] ?? null,
+            'total_amount' => $this->calculateTotal($validated['items']),
+        ]);
+
+        $items = collect($validated['items'])->values()->map(function (array $item, int $index) {
+            $qty = (float) $item['qty'];
+            $unitPrice = (float) $item['unit_price'];
+
+            return (object) [
+                'description' => $item['description'],
+                'item_type' => $item['item_type'] ?? 'main_item',
+                'display_number' => $item['display_number'] ?? (string) ($index + 1),
+                'unit' => $item['unit'] ?? null,
+                'qty' => $qty,
+                'unit_price' => $unitPrice,
+                'total' => round($qty * $unitPrice, 2),
+                'sort_order' => $index,
+            ];
+        });
+
+        $quotation->setRelation('items', $items);
+
+        return $quotation;
+    }
+
+    private function makeQuotationPdf(Quotation $quotation)
+    {
+        if ($quotation->exists) {
+            $quotation->loadMissing('items');
+        }
+
+        $letterheadPath = public_path('template/Letterhead.png');
+        $letterhead = 'data:image/png;base64,' . base64_encode(File::get($letterheadPath));
+
+        $footerPagePath = public_path('template/Footer.png');
+        $footerPage = File::exists($footerPagePath)
+            ? 'data:image/png;base64,' . base64_encode(File::get($footerPagePath))
+            : null;
+
+        $noteIcon = null;
+        $notePngPath = public_path('template/note-icon.png');
+
+        if (File::exists($notePngPath)) {
+            $noteIcon = 'data:image/png;base64,' . base64_encode(File::get($notePngPath));
+        }
+
+        return Pdf::loadView('quotations.quotation-pdf', [
+            'quotation' => $quotation,
+            'letterhead' => $letterhead,
+            'footerPage' => $footerPage,
+            'noteIcon' => $noteIcon,
+        ])->setPaper('a4', 'portrait');
     }
 
     private function deleteQuotationPdf(?string $filePath): void
