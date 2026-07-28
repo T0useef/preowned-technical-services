@@ -94,10 +94,19 @@
     width: 34px; height: 34px; border-radius: 8px;
     border: 1px solid rgba(217, 75, 110, 0.3); background: #fff; color: #d94b6e;
   }
-  .item-actions {
+  .btn-add-line.btn-import {
+    border-style: solid;
+    border-color: rgba(25, 135, 84, 0.35);
+    color: #198754;
+  }
+  .btn-add-line.btn-template {
+    border-style: solid;
+  }
+  .import-options {
     display: flex;
+    align-items: center;
+    gap: 0.75rem;
     flex-wrap: wrap;
-    gap: 0.45rem;
   }
   .form-actions {
     display: flex;
@@ -180,6 +189,12 @@
       <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">
         <label class="form-label mb-0 fw-semibold" style="color:#080059;">Line Items</label>
         <div class="item-actions">
+          <a href="{{ route('dashboard.quotations.excel-template') }}" class="btn btn-add-line btn-template btn-sm">
+            <i class="fa-solid fa-download me-1"></i>Download Template
+          </a>
+          <button type="button" class="btn btn-add-line btn-import btn-sm" id="importExcelBtn">
+            <i class="fa-solid fa-file-excel me-1"></i>Import Excel
+          </button>
           <button type="button" class="btn btn-add-line btn-sm" id="addMainItemBtn">
             <i class="fa-solid fa-plus me-1"></i>Add Main Item
           </button>
@@ -189,6 +204,13 @@
           <button type="button" class="btn btn-add-line btn-sub-item btn-sm" id="addSubItemBtn">
             <i class="fa-solid fa-list-ol me-1"></i>Add Sub-Item
           </button>
+        </div>
+      </div>
+      <div class="import-options mb-2">
+        <input type="file" id="excelImportInput" accept=".xlsx,.xls,.csv" class="d-none">
+        <div class="form-check mb-0">
+          <input class="form-check-input" type="checkbox" id="replaceItemsOnImport">
+          <label class="form-check-label" for="replaceItemsOnImport">Replace existing items on import</label>
         </div>
       </div>
       <span class="text-danger error-message d-block mb-2" id="items-error"></span>
@@ -500,6 +522,58 @@
         return;
       }
       addLineItem({ item_type: "sub_item" });
+    });
+
+    $("#importExcelBtn").on("click", function () {
+      $("#excelImportInput").trigger("click");
+    });
+
+    $("#excelImportInput").on("change", function () {
+      const file = this.files && this.files[0];
+      if (!file) return;
+
+      const formData = new FormData();
+      formData.append("_token", "{{ csrf_token() }}");
+      formData.append("file", file);
+
+      const $btn = $("#importExcelBtn");
+      $btn.prop("disabled", true).html('<i class="fa-solid fa-spinner fa-spin"></i> Importing...');
+      $("#items-error").text("");
+
+      $.ajax({
+        url: "{{ route('dashboard.quotations.import-excel') }}",
+        type: "POST",
+        data: formData,
+        processData: false,
+        contentType: false,
+        success: function (response) {
+          const replaceExisting = $("#replaceItemsOnImport").is(":checked");
+          if (replaceExisting) {
+            $("#lineItemsBody").empty();
+          }
+
+          (response.items || []).forEach(function (item) {
+            addLineItem(item);
+          });
+
+          if (response.message) {
+            alert(response.message);
+          }
+        },
+        error: function (xhr) {
+          if (xhr.responseJSON?.errors?.file) {
+            $("#items-error").text(xhr.responseJSON.errors.file[0]);
+          } else if (xhr.responseJSON?.message) {
+            $("#items-error").text(xhr.responseJSON.message);
+          } else {
+            $("#items-error").text("Unable to import Excel file. Please check the template and try again.");
+          }
+        },
+        complete: function () {
+          $btn.prop("disabled", false).html('<i class="fa-solid fa-file-excel me-1"></i>Import Excel');
+          $("#excelImportInput").val("");
+        }
+      });
     });
 
     $("#lineItemsBody").on("input", ".item-qty, .item-unit-price", function () {

@@ -10,6 +10,9 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
+use PhpOffice\PhpSpreadsheet\IOFactory;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
 class QuotationController extends Controller
 {
@@ -154,6 +157,193 @@ class QuotationController extends Controller
         return response()->json([
             'message' => 'Quotation deleted successfully',
         ]);
+    }
+
+    public function downloadExcelTemplate()
+    {
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->setTitle('Quotation Items');
+
+        $headers = ['Item Type', 'Description', 'Unit', 'Qty', 'Unit Price', 'Total'];
+        foreach ($headers as $index => $header) {
+            $sheet->setCellValue([$index + 1, 1], $header);
+        }
+
+        $sampleRows = [
+            ['main_item', 'Plumbing installation for ground floor washrooms', 'Job', 1, 4500, 4500],
+            ['main_item', 'Electrical wiring and switchboard upgrade', 'Job', 1, 6250, ''],
+            ['sub_heading', 'HVAC Works', '', '', '', ''],
+            ['sub_item', 'HVAC duct cleaning and maintenance', 'Nos', 2, 2000, 4000],
+            ['sub_item', 'Labour and site finishing works', 'Lot', 1, 4000, 'LS'],
+        ];
+
+        foreach ($sampleRows as $rowIndex => $row) {
+            foreach ($row as $colIndex => $value) {
+                $sheet->setCellValue([$colIndex + 1, $rowIndex + 2], $value);
+            }
+        }
+
+        foreach (range('A', 'F') as $column) {
+            $sheet->getColumnDimension($column)->setAutoSize(true);
+        }
+
+        $writer = new Xlsx($spreadsheet);
+        $tempPath = storage_path('app/quotation-items-template.xlsx');
+        $writer->save($tempPath);
+
+        return response()->download($tempPath, 'quotation-items-template.xlsx')->deleteFileAfterSend(true);
+    }
+
+    public function importExcel(Request $request)
+    {
+        $request->validate([
+            'file' => 'required|file|mimes:xlsx,xls,csv|max:5120',
+        ]);
+
+        $spreadsheet = IOFactory::load($request->file('file')->getRealPath());
+        $sheet = $spreadsheet->getActiveSheet();
+        $rows = $sheet->toArray(null, true, true, false);
+
+        if (count($rows) < 2) {
+            throw ValidationException::withMessages([
+                'file' => 'The Excel file has no data rows.',
+            ]);
+        }
+
+        $headerMap = $this->mapExcelHeaders($rows[0] ?? []);
+        if (!isset($headerMap['item_type']) || !isset($headerMap['description'])) {
+            throw ValidationException::withMessages([
+                'file' => 'Excel must include "Item Type" and "Description" headers.',
+            ]);
+        }
+
+        $rawItems = [];
+        for ($i = 1; $i < count($rows); $i++) {
+            $row = $rows[$i];
+            if ($this->excelRowIsEmpty($row)) {
+                continue;
+            }
+
+            $itemType = $this->normalizeExcelItemType($row[$headerMap['item_type']] ?? 'main_item');
+            $description = trim((string) ($row[$headerMap['description']] ?? ''));
+            if ($description === '') {
+                continue;
+            }
+
+            $unit = isset($headerMap['unit']) ? trim((string) ($row[$headerMap['unit']] ?? '')) : '';
+            $qty = isset($headerMap['qty']) ? $this->parseExcelNumber($row[$headerMap['qty']] ?? null) : null;
+            $unitPrice = isset($headerMap['unit_price']) ? $this->parseExcelNumber($row[$headerMap['unit_price']] ?? null) : null;
+            $total = isset($headerMap['total']) ? trim((string) ($row[$headerMap['total']] ?? '')) : '';
+
+            if ($itemType === 'sub_heading') {
+                $rawItems[] = [
+                    'item_type' => 'sub_heading',
+                    'description' => $description,
+                    'unit' => null,
+                    'qty' => 0,
+                    'unit_price' => 0,
+                    'total' => '',
+                ];
+                continue;
+            }
+
+            $qty = $qty ?? 1;
+            $unitPrice = $unitPrice ?? 0;
+            if ($total === '' && is_numeric($qty) && is_numeric($unitPrice)) {
+                $total = number_format(round((float) $qty * (float) $unitPrice, 2), 2, '.', '');
+            }
+
+            $rawItems[] = [
+                'item_type' => $itemType,
+                'description' => $description,
+                'unit' => $unit !== '' ? $unit : null,
+                'qty' => $qty,
+                'unit_price' => $unitPrice,
+                'total' => $total,
+            ];
+        }
+
+        if (empty($rawItems)) {
+            throw ValidationException::withMessages([
+                'file' => 'No valid item rows were found in the Excel file.',
+            ]);
+        }
+
+        $items = $this->normalizeItems($rawItems);
+
+        return response()->json([
+            'message' => count($items) . ' item(s) imported successfully.',
+            'items' => $items,
+        ]);
+    }
+
+    private function mapExcelHeaders(array $headerRow): array
+    {
+        $map = [];
+
+        foreach ($headerRow as $index => $header) {
+            $key = strtolower(trim((string) $header));
+            $key = preg_replace('/\s+/', ' ', $key);
+
+            if (in_array($key, ['item type', 'item_type', 'type'], true)) {
+                $map['item_type'] = $index;
+            } elseif (in_array($key, ['description', 'item description'], true)) {
+                $map['description'] = $index;
+            } elseif ($key === 'unit') {
+                $map['unit'] = $index;
+            } elseif (in_array($key, ['qty', 'quantity'], true)) {
+                $map['qty'] = $index;
+            } elseif (in_array($key, ['unit price', 'unit_price', 'price'], true)) {
+                $map['unit_price'] = $index;
+            } elseif (in_array($key, ['total', 'amount'], true)) {
+                $map['total'] = $index;
+            }
+        }
+
+        return $map;
+    }
+
+    private function normalizeExcelItemType(mixed $value): string
+    {
+        $type = strtolower(trim((string) $value));
+        $type = str_replace([' ', '-'], '_', $type);
+
+        return match ($type) {
+            'main_item', 'main', 'item' => 'main_item',
+            'sub_heading', 'subheading', 'heading' => 'sub_heading',
+            'sub_item', 'subitem', 'child' => 'sub_item',
+            default => 'main_item',
+        };
+    }
+
+    private function parseExcelNumber(mixed $value): ?float
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        if (is_numeric($value)) {
+            return (float) $value;
+        }
+
+        $cleaned = preg_replace('/[^0-9.\-]/', '', (string) $value);
+        if ($cleaned === '' || !is_numeric($cleaned)) {
+            return null;
+        }
+
+        return (float) $cleaned;
+    }
+
+    private function excelRowIsEmpty(array $row): bool
+    {
+        foreach ($row as $value) {
+            if (trim((string) $value) !== '') {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     private function validateQuotation(Request $request): array
@@ -357,10 +547,13 @@ class QuotationController extends Controller
         $letterheadPath = public_path('template/Letterhead.png');
         $letterhead = 'data:image/png;base64,' . base64_encode(File::get($letterheadPath));
 
-        $footerPagePath = public_path('template/Footer.png');
-        $footerPage = File::exists($footerPagePath)
-            ? 'data:image/png;base64,' . base64_encode(File::get($footerPagePath))
-            : null;
+        $footerPages = [];
+        foreach (['Footer-1.png', 'Footer-2.png'] as $footerFile) {
+            $footerPath = public_path('template/' . $footerFile);
+            if (File::exists($footerPath)) {
+                $footerPages[] = 'data:image/png;base64,' . base64_encode(File::get($footerPath));
+            }
+        }
 
         $noteIcon = null;
         $notePngPath = public_path('template/note-icon.png');
@@ -372,7 +565,7 @@ class QuotationController extends Controller
         return Pdf::loadView('quotations.quotation-pdf', [
             'quotation' => $quotation,
             'letterhead' => $letterhead,
-            'footerPage' => $footerPage,
+            'footerPages' => $footerPages,
             'noteIcon' => $noteIcon,
         ])->setPaper('a4', 'portrait');
     }

@@ -75,6 +75,8 @@ Route::middleware('auth')->group(function () {
     // quotations
     Route::get('/dashboard/quotations', [QuotationController::class, 'index'])->name('dashboard.quotations.index');
     Route::get('/dashboard/quotations/create', [QuotationController::class, 'create'])->name('dashboard.quotations.create');
+    Route::get('/dashboard/quotations/excel-template', [QuotationController::class, 'downloadExcelTemplate'])->name('dashboard.quotations.excel-template');
+    Route::post('/dashboard/quotations/import-excel', [QuotationController::class, 'importExcel'])->name('dashboard.quotations.import-excel');
     Route::post('/dashboard/quotations/preview', [QuotationController::class, 'preview'])->name('dashboard.quotations.preview');
     Route::post('/dashboard/quotations', [QuotationController::class, 'store'])->name('dashboard.quotations.store');
     Route::get('/dashboard/quotations/{quotation}/edit', [QuotationController::class, 'edit'])->name('dashboard.quotations.edit');

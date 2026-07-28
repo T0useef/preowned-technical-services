@@ -556,10 +556,10 @@
         @php $rowOffset += count($pageItems); @endphp
     @endforeach
 
-    @if(!empty($footerPage))
+    @foreach(($footerPages ?? []) as $footerPage)
         <div class="footer-page">
             <img class="footer-page-bg" src="{{ $footerPage }}" alt="">
         </div>
-    @endif
+    @endforeach
 </body>
 </html>
