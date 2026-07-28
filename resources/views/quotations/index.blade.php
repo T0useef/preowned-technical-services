@@ -220,7 +220,7 @@
           </table>
         </div>
 
-        <div class="grand-total-box mt-3">
+        <div class="grand-total-box mt-3" id="viewGrandTotalBox">
           <span class="fw-semibold text-secondary">Grand Total</span>
           <strong id="viewGrandTotal">0.00</strong>
         </div>
@@ -293,6 +293,11 @@
       $("#viewQuotationDate").text(String(quotation.quotation_date).slice(0, 10));
       $("#viewTotalAmount").text(formatMoney(quotation.total_amount));
       $("#viewGrandTotal").text(formatMoney(quotation.total_amount));
+      if (quotation.show_grand_total === false || quotation.show_grand_total === 0) {
+        $("#viewGrandTotalBox").addClass("d-none");
+      } else {
+        $("#viewGrandTotalBox").removeClass("d-none");
+      }
       $("#viewSubject").text(quotation.subject || "—");
       $("#viewEditBtn").attr("href", `{{ url('/dashboard/quotations') }}/${quotation.id}/edit`).removeClass("d-none");
 

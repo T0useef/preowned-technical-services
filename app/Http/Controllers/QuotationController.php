@@ -65,6 +65,7 @@ class QuotationController extends Controller
                 'quotation_date' => $validated['quotation_date'],
                 'notes' => $validated['notes'] ?? null,
                 'total_amount' => $this->calculateTotal($validated['items']),
+                'show_grand_total' => $validated['show_grand_total'] ?? true,
             ]);
 
             $this->syncItems($quotation, $validated['items']);
@@ -93,6 +94,7 @@ class QuotationController extends Controller
                 'quotation_date' => $validated['quotation_date'],
                 'notes' => $validated['notes'] ?? null,
                 'total_amount' => $this->calculateTotal($validated['items']),
+                'show_grand_total' => $validated['show_grand_total'] ?? true,
             ]);
 
             $quotation->items()->delete();
@@ -355,6 +357,7 @@ class QuotationController extends Controller
             'subject' => 'nullable|string|max:500',
             'quotation_date' => 'required|date',
             'notes' => 'nullable|string|max:2000',
+            'show_grand_total' => 'nullable|boolean',
             'items' => 'required|array|min:1',
             'items.*.item_type' => 'nullable|in:main_item,sub_heading,sub_item',
             'items.*.display_number' => 'nullable|string|max:20',
@@ -372,6 +375,7 @@ class QuotationController extends Controller
         }
 
         $validated['items'] = $this->normalizeItems($validated['items']);
+        $validated['show_grand_total'] = $request->boolean('show_grand_total', true);
 
         foreach ($validated['items'] as $index => $item) {
             if (($item['item_type'] ?? 'main_item') === 'sub_heading') {
@@ -515,6 +519,7 @@ class QuotationController extends Controller
             'quotation_date' => $validated['quotation_date'],
             'notes' => $validated['notes'] ?? null,
             'total_amount' => $this->calculateTotal($validated['items']),
+            'show_grand_total' => $validated['show_grand_total'] ?? true,
         ]);
 
         $items = collect($validated['items'])->values()->map(function (array $item, int $index) {

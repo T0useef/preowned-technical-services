@@ -404,13 +404,16 @@
         }
 
         $lastPageCapacity = $currentPageIndex === 0 ? $firstPageCapacity : $nextPageCapacity;
-        if (($currentUsedHeight + $closingHeight) > $lastPageCapacity) {
-            $chunks[] = [
-                'items' => [],
-                'show_closing' => true,
-            ];
-        } else {
-            $chunks[$currentPageIndex]['show_closing'] = true;
+        $showGrandTotal = (bool) ($quotation->show_grand_total ?? true);
+        if ($showGrandTotal) {
+            if (($currentUsedHeight + $closingHeight) > $lastPageCapacity) {
+                $chunks[] = [
+                    'items' => [],
+                    'show_closing' => true,
+                ];
+            } else {
+                $chunks[$currentPageIndex]['show_closing'] = true;
+            }
         }
 
         $rowOffset = 0;

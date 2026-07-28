@@ -232,9 +232,15 @@
         </table>
       </div>
 
-      <div class="grand-total-box">
-        <span class="fw-semibold text-secondary">Grand Total</span>
-        <strong id="grandTotalDisplay">0.00</strong>
+      <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mt-3">
+        <div class="form-check form-switch m-0">
+          <input class="form-check-input" type="checkbox" role="switch" id="showGrandTotal" {{ !$isEdit || ($quotation->show_grand_total ?? true) ? 'checked' : '' }}>
+          <label class="form-check-label" for="showGrandTotal">Show Grand Total on PDF</label>
+        </div>
+        <div class="grand-total-box mb-0" id="grandTotalBox">
+          <span class="fw-semibold text-secondary">Grand Total</span>
+          <strong id="grandTotalDisplay">0.00</strong>
+        </div>
       </div>
 
       <div class="form-actions">
@@ -392,6 +398,10 @@
       $("#grandTotalDisplay").text(formatMoney(grandTotal));
     }
 
+    function syncGrandTotalVisibility() {
+      $("#grandTotalBox").toggleClass("d-none", !$("#showGrandTotal").is(":checked"));
+    }
+
     function hasSubHeading() {
       let found = false;
       $("#lineItemsBody .line-item-row").each(function () {
@@ -438,6 +448,7 @@
         subject: $("#quotationSubject").val(),
         quotation_date: $("#quotationDate").val(),
         notes: $("#quotationNotes").val(),
+        show_grand_total: $("#showGrandTotal").is(":checked") ? 1 : 0,
         items: collectItems(),
       };
 
@@ -679,6 +690,8 @@
       });
     });
 
+    $("#showGrandTotal").on("change", syncGrandTotalVisibility);
+
     if (initialItems.length) {
       initialItems.forEach(function (item) {
         addLineItem(item);
@@ -686,6 +699,8 @@
     } else {
       addLineItem({ item_type: "main_item" });
     }
+
+    syncGrandTotalVisibility();
   });
 </script>
 @endsection

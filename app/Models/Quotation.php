@@ -16,6 +16,7 @@ class Quotation extends Model
         'quotation_date',
         'notes',
         'total_amount',
+        'show_grand_total',
         'file_path',
     ];
 
@@ -24,6 +25,7 @@ class Quotation extends Model
         return [
             'quotation_date' => 'date',
             'total_amount' => 'decimal:2',
+            'show_grand_total' => 'boolean',
         ];
     }
 
