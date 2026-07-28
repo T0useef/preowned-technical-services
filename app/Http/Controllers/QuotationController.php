@@ -234,8 +234,8 @@ class QuotationController extends Controller
             }
 
             $unit = isset($headerMap['unit']) ? trim((string) ($row[$headerMap['unit']] ?? '')) : '';
-            $qty = isset($headerMap['qty']) ? $this->parseExcelNumber($row[$headerMap['qty']] ?? null) : null;
-            $unitPrice = isset($headerMap['unit_price']) ? $this->parseExcelNumber($row[$headerMap['unit_price']] ?? null) : null;
+            $qty = isset($headerMap['qty']) ? $this->parseExcelCell($row[$headerMap['qty']] ?? null) : null;
+            $unitPrice = isset($headerMap['unit_price']) ? $this->parseExcelCell($row[$headerMap['unit_price']] ?? null) : null;
             $total = isset($headerMap['total']) ? trim((string) ($row[$headerMap['total']] ?? '')) : '';
 
             if ($itemType === 'sub_heading') {
@@ -243,15 +243,15 @@ class QuotationController extends Controller
                     'item_type' => 'sub_heading',
                     'description' => $description,
                     'unit' => null,
-                    'qty' => 0,
-                    'unit_price' => 0,
+                    'qty' => '',
+                    'unit_price' => '',
                     'total' => '',
                 ];
                 continue;
             }
 
-            $qty = $qty ?? 1;
-            $unitPrice = $unitPrice ?? 0;
+            $qty = $qty ?? '';
+            $unitPrice = $unitPrice ?? '';
             if ($total === '' && is_numeric($qty) && is_numeric($unitPrice)) {
                 $total = number_format(round((float) $qty * (float) $unitPrice, 2), 2, '.', '');
             }
@@ -319,22 +319,15 @@ class QuotationController extends Controller
         };
     }
 
-    private function parseExcelNumber(mixed $value): ?float
+    private function parseExcelCell(mixed $value): ?string
     {
         if ($value === null || $value === '') {
             return null;
         }
 
-        if (is_numeric($value)) {
-            return (float) $value;
-        }
+        $text = trim((string) $value);
 
-        $cleaned = preg_replace('/[^0-9.\-]/', '', (string) $value);
-        if ($cleaned === '' || !is_numeric($cleaned)) {
-            return null;
-        }
-
-        return (float) $cleaned;
+        return $text === '' ? null : $text;
     }
 
     private function excelRowIsEmpty(array $row): bool
@@ -363,8 +356,8 @@ class QuotationController extends Controller
             'items.*.display_number' => 'nullable|string|max:20',
             'items.*.description' => 'required|string|max:500',
             'items.*.unit' => 'nullable|string|max:50',
-            'items.*.qty' => 'nullable|numeric|min:0',
-            'items.*.unit_price' => 'nullable|numeric|min:0',
+            'items.*.qty' => 'nullable|string|max:100',
+            'items.*.unit_price' => 'nullable|string|max:100',
             'items.*.total' => 'nullable|string|max:100',
         ]);
 
@@ -376,18 +369,6 @@ class QuotationController extends Controller
 
         $validated['items'] = $this->normalizeItems($validated['items']);
         $validated['show_grand_total'] = $request->boolean('show_grand_total', true);
-
-        foreach ($validated['items'] as $index => $item) {
-            if (($item['item_type'] ?? 'main_item') === 'sub_heading') {
-                continue;
-            }
-
-            if ((float) ($item['qty'] ?? 0) < 0.01) {
-                throw ValidationException::withMessages([
-                    "items.{$index}.qty" => 'Quantity must be at least 0.01 for priced items.',
-                ]);
-            }
-        }
 
         return $validated;
     }
@@ -420,14 +401,14 @@ class QuotationController extends Controller
             }
 
             $isHeading = $type === 'sub_heading';
-            $qty = $isHeading ? 0.0 : (float) ($item['qty'] ?? 0);
-            $unitPrice = $isHeading ? 0.0 : (float) ($item['unit_price'] ?? 0);
+            $qty = $isHeading ? '' : trim((string) ($item['qty'] ?? ''));
+            $unitPrice = $isHeading ? '' : trim((string) ($item['unit_price'] ?? ''));
 
             $rawTotal = trim((string) ($item['total'] ?? ''));
             if ($isHeading) {
                 $totalValue = '';
-            } elseif ($rawTotal === '') {
-                $totalValue = number_format(round($qty * $unitPrice, 2), 2, '.', '');
+            } elseif ($rawTotal === '' && is_numeric($qty) && is_numeric($unitPrice)) {
+                $totalValue = number_format(round((float) $qty * (float) $unitPrice, 2), 2, '.', '');
             } else {
                 $totalValue = $rawTotal;
             }
@@ -449,17 +430,14 @@ class QuotationController extends Controller
     private function syncItems(Quotation $quotation, array $items): void
     {
         foreach ($items as $index => $item) {
-            $qty = (float) $item['qty'];
-            $unitPrice = (float) $item['unit_price'];
-
             $quotation->items()->create([
                 'description' => $item['description'],
                 'item_type' => $item['item_type'] ?? 'main_item',
                 'display_number' => $item['display_number'] ?? null,
                 'unit' => $item['unit'] ?? null,
-                'qty' => $qty,
-                'unit_price' => $unitPrice,
-                'total' => (string) ($item['total'] ?? '0'),
+                'qty' => (string) ($item['qty'] ?? ''),
+                'unit_price' => (string) ($item['unit_price'] ?? ''),
+                'total' => (string) ($item['total'] ?? ''),
                 'sort_order' => $index,
             ]);
         }
@@ -523,8 +501,13 @@ class QuotationController extends Controller
         ]);
 
         $items = collect($validated['items'])->values()->map(function (array $item, int $index) {
-            $qty = (float) $item['qty'];
-            $unitPrice = (float) $item['unit_price'];
+            $qty = (string) ($item['qty'] ?? '');
+            $unitPrice = (string) ($item['unit_price'] ?? '');
+            $total = (string) ($item['total'] ?? '');
+
+            if ($total === '' && is_numeric($qty) && is_numeric($unitPrice)) {
+                $total = number_format(round((float) $qty * (float) $unitPrice, 2), 2, '.', '');
+            }
 
             return (object) [
                 'description' => $item['description'],
@@ -533,7 +516,7 @@ class QuotationController extends Controller
                 'unit' => $item['unit'] ?? null,
                 'qty' => $qty,
                 'unit_price' => $unitPrice,
-                'total' => (string) ($item['total'] ?? number_format(round($qty * $unitPrice, 2), 2, '.', '')),
+                'total' => $total,
                 'sort_order' => $index,
             ];
         });

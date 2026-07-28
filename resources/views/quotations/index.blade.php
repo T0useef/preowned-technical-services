@@ -277,6 +277,15 @@
       return Number(value || 0).toFixed(2);
     }
 
+    function formatCell(value) {
+      const text = String(value ?? "").trim();
+      if (text === "") return "—";
+      if (!isNaN(text) && isFinite(Number(text))) {
+        return formatMoney(text);
+      }
+      return escapeHtml(text);
+    }
+
     function escapeHtml(value) {
       return String(value ?? "")
         .replace(/&/g, "&amp;")
@@ -318,19 +327,14 @@
         quotation.items.forEach(function (item, index) {
           const isHeading = (item.item_type || "main_item") === "sub_heading";
           const number = item.display_number || (index + 1);
-          const totalText = isHeading
-            ? "—"
-            : (isNaN(item.total) || item.total === null || item.total === ""
-                ? escapeHtml(item.total || "—")
-                : formatMoney(item.total));
           $body.append(`
             <tr>
               <td>${escapeHtml(number)}</td>
               <td>${escapeHtml(item.description)}</td>
               <td>${isHeading ? "—" : escapeHtml(item.unit || "—")}</td>
-              <td>${isHeading ? "—" : formatMoney(item.qty)}</td>
-              <td>${isHeading ? "—" : formatMoney(item.unit_price)}</td>
-              <td class="fw-semibold" style="color:#080059;">${totalText}</td>
+              <td>${isHeading ? "—" : formatCell(item.qty)}</td>
+              <td>${isHeading ? "—" : formatCell(item.unit_price)}</td>
+              <td class="fw-semibold" style="color:#080059;">${isHeading ? "—" : formatCell(item.total)}</td>
             </tr>
           `);
         });

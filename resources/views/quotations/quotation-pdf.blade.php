@@ -532,8 +532,20 @@
                                     @else
                                         <td class="description-cell">{{ $item->description }}</td>
                                         <td class="col-center" style="text-align:center;">{{ $item->unit ?? '' }}</td>
-                                        <td class="num col-center" style="text-align:center;">{{ number_format($item->qty, 2) }}</td>
-                                        <td class="num col-center" style="text-align:center;">{{ number_format($item->unit_price, 2) }}</td>
+                                        <td class="num col-center" style="text-align:center;">
+                                            @if(is_numeric($item->qty))
+                                                {{ number_format((float) $item->qty, 2) }}
+                                            @else
+                                                {{ $item->qty }}
+                                            @endif
+                                        </td>
+                                        <td class="num col-center" style="text-align:center;">
+                                            @if(is_numeric($item->unit_price))
+                                                {{ number_format((float) $item->unit_price, 2) }}
+                                            @else
+                                                {{ $item->unit_price }}
+                                            @endif
+                                        </td>
                                         <td class="num col-center" style="text-align:center;">
                                             @if(is_numeric($item->total))
                                                 {{ number_format((float) $item->total, 2) }}

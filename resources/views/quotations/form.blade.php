@@ -275,7 +275,7 @@
       return Number(value || 0).toFixed(2);
     }
 
-    function isNumericTotal(value) {
+    function isNumericValue(value) {
       const text = String(value ?? "").trim();
       if (text === "") return false;
       return !isNaN(text) && isFinite(Number(text));
@@ -288,10 +288,11 @@
         ? "is-sub-heading"
         : (type === "sub_item" ? "is-sub-item" : "");
       const disabledAttr = isHeading ? "disabled" : "";
-      const qtyValue = isHeading ? 0 : (item.qty ?? 1);
-      const priceValue = isHeading ? 0 : (item.unit_price ?? 0);
+      const qtyValue = isHeading ? "" : (item.qty ?? "1");
+      const priceValue = isHeading ? "" : (item.unit_price ?? "0");
       const unitValue = isHeading ? "" : (item.unit ?? "");
-      const calculated = formatMoney((parseFloat(qtyValue) || 0) * (parseFloat(priceValue) || 0));
+      const canCalculate = isNumericValue(qtyValue) && isNumericValue(priceValue);
+      const calculated = canCalculate ? formatMoney(parseFloat(qtyValue) * parseFloat(priceValue)) : "";
       const totalValue = isHeading ? "" : (item.total ?? calculated);
       const placeholder = isHeading ? "Sub-heading title" : "Item description";
       const manualFlag = (!isHeading && item.total !== undefined && item.total !== null && String(item.total) !== calculated) ? "1" : "0";
@@ -310,10 +311,10 @@
             <input type="text" class="form-control item-unit" value="${escapeAttr(unitValue)}" placeholder="e.g. Job" ${disabledAttr}>
           </td>
           <td>
-            <input type="number" min="0" step="0.01" class="form-control item-qty" value="${qtyValue}" ${disabledAttr}>
+            <input type="text" class="form-control item-qty" value="${escapeAttr(qtyValue)}" placeholder="Qty or text" ${disabledAttr}>
           </td>
           <td>
-            <input type="number" min="0" step="0.01" class="form-control item-unit-price" value="${priceValue}" ${disabledAttr}>
+            <input type="text" class="form-control item-unit-price" value="${escapeAttr(priceValue)}" placeholder="Price or text" ${disabledAttr}>
           </td>
           <td>
             <input type="text" class="form-control item-total" value="${escapeAttr(totalValue)}" placeholder="Amount or text" ${disabledAttr}>
@@ -369,11 +370,13 @@
 
       const manual = String($row.data("manual-total")) === "1";
       if (!manual || forceCalculate) {
-        const qty = parseFloat($row.find(".item-qty").val()) || 0;
-        const unitPrice = parseFloat($row.find(".item-unit-price").val()) || 0;
-        $row.find(".item-total").val(formatMoney(qty * unitPrice));
-        if (forceCalculate) {
-          $row.data("manual-total", "0");
+        const qty = $row.find(".item-qty").val();
+        const unitPrice = $row.find(".item-unit-price").val();
+        if (isNumericValue(qty) && isNumericValue(unitPrice)) {
+          $row.find(".item-total").val(formatMoney(parseFloat(qty) * parseFloat(unitPrice)));
+          if (forceCalculate) {
+            $row.data("manual-total", "0");
+          }
         }
       }
 
@@ -389,7 +392,7 @@
         }
 
         const totalValue = $(this).find(".item-total").val();
-        if (!isNumericTotal(totalValue)) {
+        if (!isNumericValue(totalValue)) {
           return;
         }
 
@@ -431,8 +434,8 @@
           display_number: $(this).find(".item-display-number").val(),
           description: $(this).find(".item-description").val(),
           unit: isHeading ? "" : $(this).find(".item-unit").val(),
-          qty: isHeading ? 0 : $(this).find(".item-qty").val(),
-          unit_price: isHeading ? 0 : $(this).find(".item-unit-price").val(),
+          qty: isHeading ? "" : $(this).find(".item-qty").val(),
+          unit_price: isHeading ? "" : $(this).find(".item-unit-price").val(),
           total: isHeading ? "" : $(this).find(".item-total").val(),
         });
       });
@@ -606,8 +609,10 @@
         $row.find(".item-description").val("");
         if (($row.data("item-type") || $row.find(".item-type").val()) !== "sub_heading") {
           $row.find(".item-unit").val("");
-          $row.find(".item-qty").val(1);
-          $row.find(".item-unit-price").val(0);
+          $row.find(".item-qty").val("1");
+          $row.find(".item-unit-price").val("0");
+          $row.find(".item-total").val("");
+          $row.data("manual-total", "0");
         }
         updateLineTotal($row);
         return;

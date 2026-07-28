@@ -19,14 +19,6 @@ class QuotationItem extends Model
         'sort_order',
     ];
 
-    protected function casts(): array
-    {
-        return [
-            'qty' => 'decimal:2',
-            'unit_price' => 'decimal:2',
-        ];
-    }
-
     public function quotation(): BelongsTo
     {
         return $this->belongsTo(Quotation::class);
