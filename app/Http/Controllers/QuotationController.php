@@ -254,6 +254,8 @@ class QuotationController extends Controller
             $unitPrice = $unitPrice ?? '';
             if ($total === '' && is_numeric($qty) && is_numeric($unitPrice)) {
                 $total = number_format(round((float) $qty * (float) $unitPrice, 2), 2, '.', '');
+            } elseif (is_numeric($total)) {
+                $total = number_format(round((float) $total, 2), 2, '.', '');
             }
 
             $rawItems[] = [
@@ -409,6 +411,8 @@ class QuotationController extends Controller
                 $totalValue = '';
             } elseif ($rawTotal === '' && is_numeric($qty) && is_numeric($unitPrice)) {
                 $totalValue = number_format(round((float) $qty * (float) $unitPrice, 2), 2, '.', '');
+            } elseif (is_numeric($rawTotal)) {
+                $totalValue = number_format(round((float) $rawTotal, 2), 2, '.', '');
             } else {
                 $totalValue = $rawTotal;
             }
@@ -507,6 +511,8 @@ class QuotationController extends Controller
 
             if ($total === '' && is_numeric($qty) && is_numeric($unitPrice)) {
                 $total = number_format(round((float) $qty * (float) $unitPrice, 2), 2, '.', '');
+            } elseif (is_numeric($total)) {
+                $total = number_format(round((float) $total, 2), 2, '.', '');
             }
 
             return (object) [

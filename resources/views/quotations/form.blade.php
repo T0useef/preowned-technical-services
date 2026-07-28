@@ -293,7 +293,10 @@
       const unitValue = isHeading ? "" : (item.unit ?? "");
       const canCalculate = isNumericValue(qtyValue) && isNumericValue(priceValue);
       const calculated = canCalculate ? formatMoney(parseFloat(qtyValue) * parseFloat(priceValue)) : "";
-      const totalValue = isHeading ? "" : (item.total ?? calculated);
+      let totalValue = isHeading ? "" : (item.total ?? calculated);
+      if (!isHeading && isNumericValue(totalValue)) {
+        totalValue = formatMoney(totalValue);
+      }
       const placeholder = isHeading ? "Sub-heading title" : "Item description";
       const manualFlag = (!isHeading && item.total !== undefined && item.total !== null && String(item.total) !== calculated) ? "1" : "0";
 
@@ -429,6 +432,11 @@
       $("#lineItemsBody .line-item-row").each(function () {
         const type = $(this).data("item-type") || $(this).find(".item-type").val() || "main_item";
         const isHeading = type === "sub_heading";
+        let total = isHeading ? "" : $(this).find(".item-total").val();
+        if (!isHeading && isNumericValue(total)) {
+          total = formatMoney(total);
+          $(this).find(".item-total").val(total);
+        }
         items.push({
           item_type: type,
           display_number: $(this).find(".item-display-number").val(),
@@ -436,7 +444,7 @@
           unit: isHeading ? "" : $(this).find(".item-unit").val(),
           qty: isHeading ? "" : $(this).find(".item-qty").val(),
           unit_price: isHeading ? "" : $(this).find(".item-unit-price").val(),
-          total: isHeading ? "" : $(this).find(".item-total").val(),
+          total: total,
         });
       });
       return items;
@@ -488,7 +496,11 @@
       });
     }
 
-    function handlePreviewError(xhr) {
+    function handlePreviewError(xhr, previewWindow) {
+      if (previewWindow && !previewWindow.closed) {
+        previewWindow.close();
+      }
+
       if (xhr.responseJSON && xhr.responseJSON.errors) {
         setErrors(xhr.responseJSON.errors);
         return;
@@ -520,6 +532,27 @@
       }
 
       alert("Unable to generate preview. Please check the form and try again.");
+    }
+
+    function openPdfBlob(blob, previewWindow) {
+      const fileUrl = URL.createObjectURL(blob);
+      if (previewWindow && !previewWindow.closed) {
+        previewWindow.location.href = fileUrl;
+      } else {
+        const opened = window.open(fileUrl, "_blank");
+        if (!opened) {
+          const link = document.createElement("a");
+          link.href = fileUrl;
+          link.target = "_blank";
+          link.rel = "noopener";
+          document.body.appendChild(link);
+          link.click();
+          link.remove();
+        }
+      }
+      setTimeout(function () {
+        URL.revokeObjectURL(fileUrl);
+      }, 120000);
     }
 
     $("#addMainItemBtn").on("click", function () {
@@ -602,6 +635,15 @@
       updateGrandTotal();
     });
 
+    $("#lineItemsBody").on("blur", ".item-total", function () {
+      const $input = $(this);
+      const value = $input.val();
+      if (isNumericValue(value)) {
+        $input.val(formatMoney(value));
+        updateGrandTotal();
+      }
+    });
+
     $("#lineItemsBody").on("click", ".remove-line-item", function () {
       const rows = $("#lineItemsBody .line-item-row");
       if (rows.length <= 1) {
@@ -624,6 +666,16 @@
 
     $("#previewQuotationBtn").on("click", function () {
       const btn = $(this);
+      $(".error-message").html("");
+      $("#lineItemsBody .form-control").removeClass("is-invalid");
+
+      // Open immediately so the browser treats it as a user gesture (avoids popup blockers).
+      const previewWindow = window.open("about:blank", "_blank");
+      if (previewWindow) {
+        previewWindow.document.write("<p style=\"font-family:Segoe UI,Arial,sans-serif;padding:24px;color:#333;\">Preparing PDF preview&hellip;</p>");
+        previewWindow.document.close();
+      }
+
       btn.prop("disabled", true).html('<i class="fa-solid fa-spinner fa-spin"></i> Preparing...');
 
       $.ajax({
@@ -632,9 +684,12 @@
         data: payload(),
         xhrFields: { responseType: "blob" },
         success: function (blob, status, xhr) {
-          const contentType = xhr.getResponseHeader("content-type") || "";
+          const contentType = (xhr.getResponseHeader("content-type") || "").toLowerCase();
 
-          if (contentType.indexOf("application/json") !== -1) {
+          if (contentType.indexOf("application/json") !== -1 || contentType.indexOf("text/html") !== -1) {
+            if (previewWindow && !previewWindow.closed) {
+              previewWindow.close();
+            }
             const reader = new FileReader();
             reader.onload = function () {
               try {
@@ -643,6 +698,8 @@
                   setErrors(response.errors);
                 } else if (response.message) {
                   alert(response.message);
+                } else {
+                  alert("Unable to generate preview. Please check the form and try again.");
                 }
               } catch (e) {
                 alert("Unable to generate preview. Please check the form and try again.");
@@ -652,13 +709,26 @@
             return;
           }
 
-          const fileUrl = URL.createObjectURL(blob);
-          window.open(fileUrl, "_blank");
-          setTimeout(function () {
-            URL.revokeObjectURL(fileUrl);
-          }, 60000);
+          // Confirm the blob is a PDF; otherwise treat it as an error payload.
+          const probe = blob.slice(0, 4);
+          const reader = new FileReader();
+          reader.onload = function () {
+            const bytes = new Uint8Array(reader.result || []);
+            const header = String.fromCharCode.apply(null, Array.from(bytes));
+            if (header !== "%PDF") {
+              handlePreviewError({ response: blob }, previewWindow);
+              return;
+            }
+            openPdfBlob(blob, previewWindow);
+          };
+          reader.onerror = function () {
+            openPdfBlob(blob, previewWindow);
+          };
+          reader.readAsArrayBuffer(probe);
         },
-        error: handlePreviewError,
+        error: function (xhr) {
+          handlePreviewError(xhr, previewWindow);
+        },
         complete: function () {
           btn.prop("disabled", false).html('<i class="fa-regular fa-file-pdf me-1"></i>Preview PDF');
         }
