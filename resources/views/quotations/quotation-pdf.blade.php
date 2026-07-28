@@ -103,16 +103,22 @@
         }
 
         .header-cover .title-cell {
-            width: 55%;
+            width: 100%;
+            text-align: center;
+            padding-bottom: 8px;
+        }
+
+        .header-cover .meta-left {
+            width: 50%;
             text-align: left;
         }
 
-        .header-cover .meta-cell {
-            width: 45%;
+        .header-cover .meta-right {
+            width: 50%;
             text-align: right;
         }
 
-        .doc-title-left {
+        .doc-title-center {
             color: #080059;
             font-weight: 800;
             font-size: 24px;
@@ -120,6 +126,7 @@
             margin: 0;
             line-height: 1.2;
             background: transparent;
+            text-align: center;
         }
 
         .header-meta-line {
@@ -424,12 +431,16 @@
                 @if($isFirst)
                     <table class="header-cover">
                         <tr>
-                            <td class="title-cell">
-                                <div class="doc-title-left">Quotation</div>
+                            <td class="title-cell" colspan="2">
+                                <div class="doc-title-center">Quotation</div>
                             </td>
-                            <td class="meta-cell">
-                                <div class="header-meta-line"><strong>Date:</strong> {{ $quotation->quotation_date->format('d/m/Y') }}</div>
+                        </tr>
+                        <tr>
+                            <td class="meta-left">
                                 <div class="header-meta-line"><strong>Quotation Number:</strong> {{ $quotation->quotation_number }}</div>
+                            </td>
+                            <td class="meta-right">
+                                <div class="header-meta-line"><strong>Date:</strong> {{ $quotation->quotation_date->format('d/m/Y') }}</div>
                             </td>
                         </tr>
                     </table>
@@ -520,7 +531,13 @@
                                         <td class="col-center" style="text-align:center;">{{ $item->unit ?? '' }}</td>
                                         <td class="num col-center" style="text-align:center;">{{ number_format($item->qty, 2) }}</td>
                                         <td class="num col-center" style="text-align:center;">{{ number_format($item->unit_price, 2) }}</td>
-                                        <td class="num col-center" style="text-align:center;">{{ number_format($item->total, 2) }}</td>
+                                        <td class="num col-center" style="text-align:center;">
+                                            @if(is_numeric($item->total))
+                                                {{ number_format((float) $item->total, 2) }}
+                                            @else
+                                                {{ $item->total }}
+                                            @endif
+                                        </td>
                                     @endif
                                 </tr>
                             @endforeach

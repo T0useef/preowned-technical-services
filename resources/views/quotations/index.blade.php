@@ -313,6 +313,11 @@
         quotation.items.forEach(function (item, index) {
           const isHeading = (item.item_type || "main_item") === "sub_heading";
           const number = item.display_number || (index + 1);
+          const totalText = isHeading
+            ? "—"
+            : (isNaN(item.total) || item.total === null || item.total === ""
+                ? escapeHtml(item.total || "—")
+                : formatMoney(item.total));
           $body.append(`
             <tr>
               <td>${escapeHtml(number)}</td>
@@ -320,7 +325,7 @@
               <td>${isHeading ? "—" : escapeHtml(item.unit || "—")}</td>
               <td>${isHeading ? "—" : formatMoney(item.qty)}</td>
               <td>${isHeading ? "—" : formatMoney(item.unit_price)}</td>
-              <td class="fw-semibold" style="color:#080059;">${isHeading ? "—" : formatMoney(item.total)}</td>
+              <td class="fw-semibold" style="color:#080059;">${totalText}</td>
             </tr>
           `);
         });

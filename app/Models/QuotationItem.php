@@ -24,7 +24,6 @@ class QuotationItem extends Model
         return [
             'qty' => 'decimal:2',
             'unit_price' => 'decimal:2',
-            'total' => 'decimal:2',
         ];
     }
 

@@ -172,6 +172,7 @@ class QuotationController extends Controller
             'items.*.unit' => 'nullable|string|max:50',
             'items.*.qty' => 'nullable|numeric|min:0',
             'items.*.unit_price' => 'nullable|numeric|min:0',
+            'items.*.total' => 'nullable|string|max:100',
         ]);
 
         if (empty($validated['items'])) {
@@ -228,6 +229,15 @@ class QuotationController extends Controller
             $qty = $isHeading ? 0.0 : (float) ($item['qty'] ?? 0);
             $unitPrice = $isHeading ? 0.0 : (float) ($item['unit_price'] ?? 0);
 
+            $rawTotal = trim((string) ($item['total'] ?? ''));
+            if ($isHeading) {
+                $totalValue = '';
+            } elseif ($rawTotal === '') {
+                $totalValue = number_format(round($qty * $unitPrice, 2), 2, '.', '');
+            } else {
+                $totalValue = $rawTotal;
+            }
+
             $normalized[] = [
                 'item_type' => $type,
                 'display_number' => $displayNumber,
@@ -235,6 +245,7 @@ class QuotationController extends Controller
                 'unit' => $isHeading ? null : ($item['unit'] ?? null),
                 'qty' => $qty,
                 'unit_price' => $unitPrice,
+                'total' => $totalValue,
             ];
         }
 
@@ -254,7 +265,7 @@ class QuotationController extends Controller
                 'unit' => $item['unit'] ?? null,
                 'qty' => $qty,
                 'unit_price' => $unitPrice,
-                'total' => round($qty * $unitPrice, 2),
+                'total' => (string) ($item['total'] ?? '0'),
                 'sort_order' => $index,
             ]);
         }
@@ -269,7 +280,12 @@ class QuotationController extends Controller
                 continue;
             }
 
-            $total += round((float) $item['qty'] * (float) $item['unit_price'], 2);
+            $lineTotal = trim((string) ($item['total'] ?? ''));
+            if ($lineTotal === '' || !is_numeric($lineTotal)) {
+                continue;
+            }
+
+            $total += round((float) $lineTotal, 2);
         }
 
         return round($total, 2);
@@ -322,7 +338,7 @@ class QuotationController extends Controller
                 'unit' => $item['unit'] ?? null,
                 'qty' => $qty,
                 'unit_price' => $unitPrice,
-                'total' => round($qty * $unitPrice, 2),
+                'total' => (string) ($item['total'] ?? number_format(round($qty * $unitPrice, 2), 2, '.', '')),
                 'sort_order' => $index,
             ];
         });

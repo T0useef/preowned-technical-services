@@ -121,6 +121,7 @@
           'unit' => $item->unit,
           'qty' => $item->qty,
           'unit_price' => $item->unit_price,
+          'total' => $item->total,
         ];
       })->values()
     : [];
@@ -246,6 +247,12 @@
       return Number(value || 0).toFixed(2);
     }
 
+    function isNumericTotal(value) {
+      const text = String(value ?? "").trim();
+      if (text === "") return false;
+      return !isNaN(text) && isFinite(Number(text));
+    }
+
     function lineItemRow(item = {}) {
       const type = item.item_type || "main_item";
       const isHeading = type === "sub_heading";
@@ -256,10 +263,13 @@
       const qtyValue = isHeading ? 0 : (item.qty ?? 1);
       const priceValue = isHeading ? 0 : (item.unit_price ?? 0);
       const unitValue = isHeading ? "" : (item.unit ?? "");
+      const calculated = formatMoney((parseFloat(qtyValue) || 0) * (parseFloat(priceValue) || 0));
+      const totalValue = isHeading ? "" : (item.total ?? calculated);
       const placeholder = isHeading ? "Sub-heading title" : "Item description";
+      const manualFlag = (!isHeading && item.total !== undefined && item.total !== null && String(item.total) !== calculated) ? "1" : "0";
 
       return `
-        <tr class="line-item-row ${rowClass}" data-item-type="${type}">
+        <tr class="line-item-row ${rowClass}" data-item-type="${type}" data-manual-total="${manualFlag}">
           <td class="align-middle">
             <span class="item-sr">${escapeAttr(item.display_number || "")}</span>
             <input type="hidden" class="item-type" value="${type}">
@@ -277,7 +287,9 @@
           <td>
             <input type="number" min="0" step="0.01" class="form-control item-unit-price" value="${priceValue}" ${disabledAttr}>
           </td>
-          <td class="line-total align-middle">0.00</td>
+          <td>
+            <input type="text" class="form-control item-total" value="${escapeAttr(totalValue)}" placeholder="Amount or text" ${disabledAttr}>
+          </td>
           <td class="align-middle">
             <button type="button" class="btn-remove-line remove-line-item" title="Remove line">
               <i class="fa-solid fa-xmark"></i>
@@ -301,7 +313,7 @@
           $row.data("item-type", type);
           $row.find(".item-type").val(type);
           $row.removeClass("is-sub-item is-sub-heading");
-          $row.find(".item-unit, .item-qty, .item-unit-price").prop("disabled", false);
+          $row.find(".item-unit, .item-qty, .item-unit-price, .item-total").prop("disabled", false);
         }
 
         if (type === "main_item" || type === "sub_heading") {
@@ -319,17 +331,24 @@
       });
     }
 
-    function updateLineTotal($row) {
+    function updateLineTotal($row, forceCalculate = false) {
       const type = $row.data("item-type") || $row.find(".item-type").val();
       if (type === "sub_heading") {
-        $row.find(".line-total").text("—");
+        $row.find(".item-total").val("");
         updateGrandTotal();
         return;
       }
 
-      const qty = parseFloat($row.find(".item-qty").val()) || 0;
-      const unitPrice = parseFloat($row.find(".item-unit-price").val()) || 0;
-      $row.find(".line-total").text(formatMoney(qty * unitPrice));
+      const manual = String($row.data("manual-total")) === "1";
+      if (!manual || forceCalculate) {
+        const qty = parseFloat($row.find(".item-qty").val()) || 0;
+        const unitPrice = parseFloat($row.find(".item-unit-price").val()) || 0;
+        $row.find(".item-total").val(formatMoney(qty * unitPrice));
+        if (forceCalculate) {
+          $row.data("manual-total", "0");
+        }
+      }
+
       updateGrandTotal();
     }
 
@@ -340,9 +359,13 @@
         if (type === "sub_heading") {
           return;
         }
-        const qty = parseFloat($(this).find(".item-qty").val()) || 0;
-        const unitPrice = parseFloat($(this).find(".item-unit-price").val()) || 0;
-        grandTotal += qty * unitPrice;
+
+        const totalValue = $(this).find(".item-total").val();
+        if (!isNumericTotal(totalValue)) {
+          return;
+        }
+
+        grandTotal += parseFloat(totalValue);
       });
       $("#grandTotalDisplay").text(formatMoney(grandTotal));
     }
@@ -378,6 +401,7 @@
           unit: isHeading ? "" : $(this).find(".item-unit").val(),
           qty: isHeading ? 0 : $(this).find(".item-qty").val(),
           unit_price: isHeading ? 0 : $(this).find(".item-unit-price").val(),
+          total: isHeading ? "" : $(this).find(".item-total").val(),
         });
       });
       return items;
@@ -479,7 +503,15 @@
     });
 
     $("#lineItemsBody").on("input", ".item-qty, .item-unit-price", function () {
-      updateLineTotal($(this).closest(".line-item-row"));
+      const $row = $(this).closest(".line-item-row");
+      $row.data("manual-total", "0");
+      updateLineTotal($row, true);
+    });
+
+    $("#lineItemsBody").on("input", ".item-total", function () {
+      const $row = $(this).closest(".line-item-row");
+      $row.data("manual-total", "1");
+      updateGrandTotal();
     });
 
     $("#lineItemsBody").on("click", ".remove-line-item", function () {
