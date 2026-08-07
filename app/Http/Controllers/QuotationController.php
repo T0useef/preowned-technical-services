@@ -151,6 +151,27 @@ class QuotationController extends Controller
         return $pdf->stream('quotation-sample-preview.pdf');
     }
 
+    public function download(Request $request, Quotation $quotation)
+    {
+        $withLetterhead = $request->boolean('letterhead', true);
+        $fileName = Str::slug($quotation->quotation_number, '_') . ($withLetterhead ? '' : '_no_letterhead') . '.pdf';
+
+        // With letterhead: serve the stored PDF as-is when available.
+        if ($withLetterhead && $quotation->file_path) {
+            $absolutePath = public_path($quotation->file_path);
+            if (File::exists($absolutePath)) {
+                return response()->download($absolutePath, $fileName, [
+                    'Content-Type' => 'application/pdf',
+                ]);
+            }
+        }
+
+        $quotation->load('items');
+        $pdf = $this->makeQuotationPdf($quotation, $withLetterhead);
+
+        return $pdf->download($fileName);
+    }
+
     public function destroy(Quotation $quotation)
     {
         $this->deleteQuotationPdf($quotation->file_path);
@@ -532,20 +553,27 @@ class QuotationController extends Controller
         return $quotation;
     }
 
-    private function makeQuotationPdf(Quotation $quotation)
+    private function makeQuotationPdf(Quotation $quotation, bool $withLetterhead = true)
     {
         if ($quotation->exists) {
             $quotation->loadMissing('items');
         }
 
-        $letterheadPath = public_path('template/Letterhead.png');
-        $letterhead = 'data:image/png;base64,' . base64_encode(File::get($letterheadPath));
+        $letterhead = null;
+        if ($withLetterhead) {
+            $letterheadPath = public_path('template/Letterhead.png');
+            if (File::exists($letterheadPath)) {
+                $letterhead = 'data:image/png;base64,' . base64_encode(File::get($letterheadPath));
+            }
+        }
 
         $footerPages = [];
-        foreach (['Footer-1.png', 'Footer-2.png'] as $footerFile) {
-            $footerPath = public_path('template/' . $footerFile);
-            if (File::exists($footerPath)) {
-                $footerPages[] = 'data:image/png;base64,' . base64_encode(File::get($footerPath));
+        if ($withLetterhead) {
+            foreach (['Footer-1.png', 'Footer-2.png'] as $footerFile) {
+                $footerPath = public_path('template/' . $footerFile);
+                if (File::exists($footerPath)) {
+                    $footerPages[] = 'data:image/png;base64,' . base64_encode(File::get($footerPath));
+                }
             }
         }
 
@@ -561,6 +589,7 @@ class QuotationController extends Controller
             'letterhead' => $letterhead,
             'footerPages' => $footerPages,
             'noteIcon' => $noteIcon,
+            'withLetterhead' => $withLetterhead,
         ])->setPaper('a4', 'portrait');
     }
 

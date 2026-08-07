@@ -80,6 +80,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/dashboard/quotations/preview', [QuotationController::class, 'preview'])->name('dashboard.quotations.preview');
     Route::post('/dashboard/quotations', [QuotationController::class, 'store'])->name('dashboard.quotations.store');
     Route::get('/dashboard/quotations/{quotation}/edit', [QuotationController::class, 'edit'])->name('dashboard.quotations.edit');
+    Route::get('/dashboard/quotations/{quotation}/download', [QuotationController::class, 'download'])->name('dashboard.quotations.download');
     Route::get('/dashboard/quotations/{quotation}', [QuotationController::class, 'show'])->name('dashboard.quotations.show');
     Route::put('/dashboard/quotations/{quotation}', [QuotationController::class, 'update'])->name('dashboard.quotations.update');
     Route::delete('/dashboard/quotations/{quotation}', [QuotationController::class, 'destroy'])->name('dashboard.quotations.destroy');
