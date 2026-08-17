@@ -12,9 +12,14 @@ return new class extends Migration
             $table->id();
             $table->string('quotation_number')->unique();
             $table->string('company_name');
+            $table->string('contact_person')->nullable();
+            $table->string('contact_phone', 50)->nullable();
+            $table->string('subject')->nullable();
             $table->date('quotation_date');
             $table->text('notes')->nullable();
             $table->decimal('total_amount', 12, 2)->default(0);
+            $table->boolean('show_grand_total')->default(true);
+            $table->string('file_path')->nullable();
             $table->timestamps();
         });
     }

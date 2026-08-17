@@ -12,9 +12,12 @@ return new class extends Migration
             $table->id();
             $table->foreignId('quotation_id')->constrained()->cascadeOnDelete();
             $table->string('description');
-            $table->decimal('qty', 10, 2);
-            $table->decimal('unit_price', 12, 2);
-            $table->decimal('total', 12, 2);
+            $table->string('item_type', 20)->default('main_item');
+            $table->string('display_number', 20)->nullable();
+            $table->string('unit', 50)->nullable();
+            $table->string('qty', 100)->default('0');
+            $table->string('unit_price', 100)->default('0');
+            $table->string('total', 100)->default('0');
             $table->unsignedSmallInteger('sort_order')->default(0);
             $table->timestamps();
         });
