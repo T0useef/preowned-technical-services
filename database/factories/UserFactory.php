@@ -24,15 +24,17 @@ class UserFactory extends Factory
      */
     public function definition(): array
     {
+        $suffix = Str::lower(Str::random(8));
+
         return [
-            'name' => $this->faker->name(),
-            'email' => $this->faker->unique()->safeEmail(),
-            'phone' => $this->faker->phoneNumber(),
-            'role' => $this->faker->randomElement(['foreman', 'driver', 'labour']),
+            'name' => 'User '.$suffix,
+            'email' => $suffix.'@example.com',
+            'phone' => null,
+            'role' => 'labour',
             'status' => true,
             'email_verified_at' => now(),
             'password' => static::$password ??= Hash::make('password'),
-            'salary' => $this->faker->randomFloat(2, 1000, 5000),
+            'salary' => 0,
             'remember_token' => Str::random(10),
         ];
     }
