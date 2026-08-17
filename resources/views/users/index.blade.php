@@ -48,6 +48,25 @@
         box-shadow: 0 15px 26px rgba(234, 188, 115, 0.45);
         }
 
+        .btn-user-template,
+        .btn-user-import {
+        border-radius: 12px;
+        font-weight: 700;
+        padding: 0.62rem 0.95rem;
+        }
+
+        .btn-user-template {
+        border: 1px solid rgba(8, 0, 89, 0.16);
+        background: #fff;
+        color: #080059;
+        }
+
+        .btn-user-import {
+        border: 1px solid rgba(25, 135, 84, 0.28);
+        background: rgba(25, 135, 84, 0.08);
+        color: #198754;
+        }
+
         .table-chip {
         border-radius: 999px;
         padding: 0.33rem 0.62rem;
@@ -287,10 +306,21 @@
           <h5 class="users-title">User Management</h5>
           <p class="users-subtitle">Manage system users and permissions</p>
         </div>
-        <button class="btn btn-add-user" id="openAddUser">
-          <i class="fa-solid fa-user-plus me-1"></i>Add User
-        </button>
+        <div class="d-flex flex-wrap align-items-center gap-2">
+          <a href="{{ route('users.excel-template') }}" class="btn btn-user-template">
+            <i class="fa-solid fa-download me-1"></i>Download Template
+          </a>
+          <button class="btn btn-user-import" id="importUsersBtn" type="button">
+            <i class="fa-solid fa-file-excel me-1"></i>Import Excel
+          </button>
+          <button class="btn btn-add-user" id="openAddUser" type="button">
+            <i class="fa-solid fa-user-plus me-1"></i>Add User
+          </button>
+          <input type="file" id="usersExcelInput" class="d-none" accept=".xlsx,.xls,.csv">
+        </div>
       </div>
+
+      <div id="userImportAlert" class="alert d-none mb-3" role="alert"></div>
 
       <div class="table-responsive">
         <table id="usersTable" class="table align-middle mb-0">
@@ -527,9 +557,75 @@
       return $("<div>").html(value).text().trim();
     }
 
+    function appendUserRow(user) {
+      const newRow = table.row.add([
+        user.name,
+        user.email,
+        user.phone ?? "",
+        Number(user.salary ?? 0).toFixed(2),
+        buildRoleChip(user.role),
+        buildStatusChip(user.status ? 1 : 0),
+        buildActionButtons(),
+      ]).draw(false).node();
+
+      $(newRow).attr("data-user-id", user.id).attr("data-user-name", user.name);
+    }
+
+    function showImportAlert(message, isWarning) {
+      $("#userImportAlert")
+        .removeClass("d-none alert-success alert-warning alert-danger")
+        .addClass(isWarning ? "alert-warning" : "alert-success")
+        .text(message);
+    }
+
     $("#openAddUser").on("click", function () {
       resetForm();
       userModal.show();
+    });
+
+    $("#importUsersBtn").on("click", function () {
+      $("#usersExcelInput").trigger("click");
+    });
+
+    $("#usersExcelInput").on("change", function () {
+      const file = this.files && this.files[0];
+      if (!file) return;
+
+      const formData = new FormData();
+      formData.append("_token", "{{ csrf_token() }}");
+      formData.append("file", file);
+
+      const btn = $("#importUsersBtn");
+      btn.prop("disabled", true).html('<i class="fa-solid fa-spinner fa-spin me-1"></i>Importing...');
+      $("#userImportAlert").addClass("d-none").text("");
+
+      $.ajax({
+        url: "{{ route('users.import-excel') }}",
+        type: "POST",
+        data: formData,
+        processData: false,
+        contentType: false,
+        success: function (response) {
+          (response.data || []).forEach(appendUserRow);
+          const errors = response.errors || [];
+          const message = errors.length
+            ? `${response.message} ${errors.length} row(s) skipped: ${errors.join(" ")}`
+            : response.message;
+          showImportAlert(message, errors.length > 0);
+        },
+        error: function (xhr) {
+          const errors = xhr.responseJSON?.errors;
+          const firstError = errors ? Object.values(errors)[0]?.[0] : null;
+          $("#userImportAlert")
+            .removeClass("d-none alert-success alert-warning")
+            .addClass("alert-danger")
+            .text(firstError || xhr.responseJSON?.message || "Unable to import Excel file.");
+        },
+        complete: function () {
+          btn.prop("disabled", false).html('<i class="fa-solid fa-file-excel me-1"></i>Import Excel');
+          $("#usersExcelInput").val("");
+        },
+      });
     });
 
     $("#saveUserBtn").on("click", function () {
@@ -571,17 +667,7 @@
             ]).draw(false);
             $(row.node()).attr("data-user-id", user.id).attr("data-user-name", user.name);
           } else {
-            const newRow = table.row.add([
-              user.name,
-              user.email,
-              user.phone ?? "",
-              Number(user.salary ?? 0).toFixed(2),
-              buildRoleChip(user.role),
-              buildStatusChip(user.status ? 1 : 0),
-              buildActionButtons(),
-            ]).draw(false).node();
-
-            $(newRow).attr("data-user-id", user.id).attr("data-user-name", user.name);
+            appendUserRow(user);
           }
 
           userModal.hide();

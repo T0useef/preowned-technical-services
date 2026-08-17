@@ -9,6 +9,7 @@ use App\Http\Controllers\WorkingHourController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\QuotationController;
 use App\Http\Controllers\ExpenseController;
+use App\Http\Controllers\AttendanceController;
 
 Route::get('/', function () {
     return view('welcome');
@@ -48,8 +49,12 @@ Route::middleware('auth')->group(function () {
         ]);
     })->name('dashboard');
 
+    Route::get('/dashboard/attendance-sheet/preview', [AttendanceController::class, 'preview'])->name('dashboard.attendance.preview');
+
     // users
     Route::get('/users', [UserController::class, 'index'])->name('users.index');
+    Route::get('/users/excel-template', [UserController::class, 'downloadExcelTemplate'])->name('users.excel-template');
+    Route::post('/users/import-excel', [UserController::class, 'importExcel'])->name('users.import-excel');
     Route::post('/users', [UserController::class, 'store'])->name('users.store');
     Route::put('/users/{user}', [UserController::class, 'update'])->name('users.update');
     Route::delete('/users/{user}', [UserController::class, 'destroy'])->name('users.destroy');

@@ -6,9 +6,14 @@ use Illuminate\Http\Request;
 use App\Models\User;
 use App\Models\UserDocument;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
+use PhpOffice\PhpSpreadsheet\IOFactory;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
 class UserController extends Controller
 {
@@ -43,6 +48,158 @@ class UserController extends Controller
         ]);
 
         return response()->json(['message' => 'User created successfully', 'data' => $user], 201);
+    }
+
+    public function downloadExcelTemplate()
+    {
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->setTitle('Users');
+
+        $headers = ['Name', 'Email', 'Phone', 'Salary', 'Role', 'Status'];
+        foreach ($headers as $index => $header) {
+            $sheet->setCellValue([$index + 1, 1], $header);
+        }
+
+        $sampleRows = [
+            ['Ahmed Ali', 'ahmed.ali@example.com', '+971500000001', 3500, 'labour', 'Active'],
+            ['Sara Khan', 'sara.khan@example.com', '+971500000002', 4200, 'driver', 'Active'],
+            ['John Smith', 'john.smith@example.com', '', 5000, 'foreman', 'Inactive'],
+        ];
+
+        foreach ($sampleRows as $rowIndex => $row) {
+            foreach ($row as $colIndex => $value) {
+                $sheet->setCellValue([$colIndex + 1, $rowIndex + 2], $value);
+            }
+        }
+
+        foreach (range('A', 'F') as $column) {
+            $sheet->getColumnDimension($column)->setAutoSize(true);
+        }
+
+        $writer = new Xlsx($spreadsheet);
+        $tempPath = storage_path('app/users-import-template.xlsx');
+        $writer->save($tempPath);
+
+        return response()->download($tempPath, 'users-import-template.xlsx')->deleteFileAfterSend(true);
+    }
+
+    public function importExcel(Request $request)
+    {
+        set_time_limit(300);
+        ini_set('max_execution_time', '300');
+
+        $request->validate([
+            'file' => 'required|file|mimes:xlsx,xls,csv|max:5120',
+        ]);
+
+        $filePath = $request->file('file')->getRealPath();
+        $reader = IOFactory::createReaderForFile($filePath);
+        if (method_exists($reader, 'setReadDataOnly')) {
+            $reader->setReadDataOnly(true);
+        }
+        $spreadsheet = $reader->load($filePath);
+        $sheet = $spreadsheet->getActiveSheet();
+        $rows = $sheet->toArray(null, true, false, false);
+        $spreadsheet->disconnectWorksheets();
+        unset($spreadsheet);
+
+        if (count($rows) < 2) {
+            throw ValidationException::withMessages([
+                'file' => 'The Excel file has no data rows.',
+            ]);
+        }
+
+        $headerMap = $this->mapUserExcelHeaders($rows[0] ?? []);
+        if (!isset($headerMap['name']) || !isset($headerMap['email']) || !isset($headerMap['role'])) {
+            throw ValidationException::withMessages([
+                'file' => 'Excel must include "Name", "Email", and "Role" headers.',
+            ]);
+        }
+
+        $existingEmails = array_flip(User::pluck('email')->map(fn ($email) => strtolower((string) $email))->all());
+        $seenEmails = [];
+        $payloads = [];
+        $errors = [];
+        $now = now();
+        $defaultPassword = Hash::make('12345678');
+
+        for ($i = 1; $i < count($rows); $i++) {
+            $row = $rows[$i];
+            if ($this->excelRowIsEmpty($row)) {
+                continue;
+            }
+
+            $excelRow = $i + 1;
+            $name = trim((string) ($row[$headerMap['name']] ?? ''));
+            $email = strtolower(trim((string) ($row[$headerMap['email']] ?? '')));
+            $phone = isset($headerMap['phone']) ? trim((string) ($row[$headerMap['phone']] ?? '')) : '';
+            $salaryRaw = isset($headerMap['salary']) ? trim((string) ($row[$headerMap['salary']] ?? '')) : '';
+            $role = $this->normalizeImportedRole($row[$headerMap['role']] ?? '');
+            $status = $this->normalizeImportedStatus($row[$headerMap['status']] ?? 'Active');
+            $rowErrors = [];
+
+            if ($name === '') {
+                $rowErrors[] = 'Name is required.';
+            }
+
+            if ($email === '') {
+                $rowErrors[] = 'Email is required.';
+            } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                $rowErrors[] = 'Email is invalid.';
+            } elseif (isset($existingEmails[$email]) || isset($seenEmails[$email])) {
+                $rowErrors[] = 'Email already exists.';
+            }
+
+            if (!$role) {
+                $rowErrors[] = 'Role must be foreman, driver, or labour.';
+            }
+
+            $salary = $salaryRaw === '' ? 0 : $salaryRaw;
+            if (!is_numeric($salary) || (float) $salary < 0) {
+                $rowErrors[] = 'Salary must be a number of 0 or more.';
+            }
+
+            if ($rowErrors) {
+                $errors[] = "Row {$excelRow}: " . implode(' ', $rowErrors);
+                continue;
+            }
+
+            $seenEmails[$email] = true;
+            $payloads[] = [
+                'name' => $name,
+                'email' => $email,
+                'phone' => $phone !== '' ? $phone : null,
+                'role' => $role,
+                'status' => $status ? 1 : 0,
+                'salary' => round((float) $salary, 2),
+                'password' => $defaultPassword,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ];
+        }
+
+        if (empty($payloads)) {
+            throw ValidationException::withMessages([
+                'file' => $errors ? implode(' ', $errors) : 'No valid user rows were found in the Excel file.',
+            ]);
+        }
+
+        $createdUsers = DB::transaction(function () use ($payloads) {
+            foreach (array_chunk($payloads, 200) as $chunk) {
+                User::insert($chunk);
+            }
+
+            $emails = array_column($payloads, 'email');
+
+            return User::whereIn('email', $emails)->get();
+        });
+
+        return response()->json([
+            'message' => $createdUsers->count() . ' user(s) imported successfully.',
+            'data' => $createdUsers,
+            'errors' => $errors,
+        ]);
     }
 
     public function update(Request $request, User $user)
@@ -137,6 +294,61 @@ class UserController extends Controller
         return response()->json([
             'message' => 'Document deleted successfully',
         ]);
+    }
+
+    private function mapUserExcelHeaders(array $headerRow): array
+    {
+        $map = [];
+
+        foreach ($headerRow as $index => $header) {
+            $key = strtolower(trim((string) $header));
+            $key = preg_replace('/\s+/', ' ', $key);
+
+            if (in_array($key, ['name', 'full name', 'full_name'], true)) {
+                $map['name'] = $index;
+            } elseif ($key === 'email') {
+                $map['email'] = $index;
+            } elseif (in_array($key, ['phone', 'phone number', 'mobile'], true)) {
+                $map['phone'] = $index;
+            } elseif ($key === 'salary') {
+                $map['salary'] = $index;
+            } elseif ($key === 'role') {
+                $map['role'] = $index;
+            } elseif ($key === 'status') {
+                $map['status'] = $index;
+            }
+        }
+
+        return $map;
+    }
+
+    private function normalizeImportedRole(mixed $value): ?string
+    {
+        $role = strtolower(trim((string) $value));
+
+        return in_array($role, ['foreman', 'driver', 'labour'], true) ? $role : null;
+    }
+
+    private function normalizeImportedStatus(mixed $value): bool
+    {
+        $status = strtolower(trim((string) $value));
+
+        if (in_array($status, ['0', 'inactive', 'no', 'false', 'disabled'], true)) {
+            return false;
+        }
+
+        return true;
+    }
+
+    private function excelRowIsEmpty(array $row): bool
+    {
+        foreach ($row as $value) {
+            if (trim((string) $value) !== '') {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     private function userDocumentsFolderName(User $user): string
