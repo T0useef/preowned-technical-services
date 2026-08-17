@@ -8,6 +8,7 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\WorkingHourController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\QuotationController;
+use App\Http\Controllers\ExpenseController;
 
 Route::get('/', function () {
     return view('welcome');
@@ -84,6 +85,13 @@ Route::middleware('auth')->group(function () {
     Route::get('/dashboard/quotations/{quotation}', [QuotationController::class, 'show'])->name('dashboard.quotations.show');
     Route::put('/dashboard/quotations/{quotation}', [QuotationController::class, 'update'])->name('dashboard.quotations.update');
     Route::delete('/dashboard/quotations/{quotation}', [QuotationController::class, 'destroy'])->name('dashboard.quotations.destroy');
+
+    // expenses
+    Route::get('/dashboard/expenses', [ExpenseController::class, 'index'])->name('dashboard.expenses.index');
+    Route::post('/dashboard/expenses', [ExpenseController::class, 'store'])->name('dashboard.expenses.store');
+    Route::get('/dashboard/expenses/{expense}', [ExpenseController::class, 'show'])->name('dashboard.expenses.show');
+    Route::put('/dashboard/expenses/{expense}', [ExpenseController::class, 'update'])->name('dashboard.expenses.update');
+    Route::delete('/dashboard/expenses/{expense}', [ExpenseController::class, 'destroy'])->name('dashboard.expenses.destroy');
 
 });
 require __DIR__.'/auth.php';
