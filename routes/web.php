@@ -53,6 +53,9 @@ Route::middleware('auth')->group(function () {
     Route::post('/users', [UserController::class, 'store'])->name('users.store');
     Route::put('/users/{user}', [UserController::class, 'update'])->name('users.update');
     Route::delete('/users/{user}', [UserController::class, 'destroy'])->name('users.destroy');
+    Route::get('/users/{user}/documents', [UserController::class, 'documents'])->name('users.documents.index');
+    Route::post('/users/{user}/documents', [UserController::class, 'storeDocuments'])->name('users.documents.store');
+    Route::delete('/users/{user}/documents/{document}', [UserController::class, 'destroyDocument'])->name('users.documents.destroy');
 
     // projects
     Route::get('/dashboard/projects', [ProjectController::class, 'index'])->name('dashboard.projects.index');

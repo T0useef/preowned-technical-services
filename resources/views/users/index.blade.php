@@ -86,9 +86,120 @@
         box-shadow: 0 10px 18px rgba(8, 0, 89, 0.12);
         }
 
+        .action-btn.folder-user:hover {
+        color: #2874d9;
+        border-color: #2874d9;
+        }
+
         .action-btn.delete-user:hover {
         color: #d94b6e;
         border-color: #d94b6e;
+        }
+
+        .user-folder-path {
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+        flex-wrap: wrap;
+        font-size: 0.82rem;
+        color: #6f7294;
+        background: rgba(8, 0, 89, 0.04);
+        border: 1px solid rgba(8, 0, 89, 0.08);
+        border-radius: 10px;
+        padding: 0.55rem 0.75rem;
+        margin-bottom: 1rem;
+        }
+
+        .user-folder-path i { color: #eabc73; }
+        .user-folder-path strong { color: #080059; font-weight: 700; }
+
+        .btn-upload-docs {
+        border: none;
+        border-radius: 12px;
+        background: linear-gradient(120deg, #eabc73, #f1d19a);
+        color: #080059;
+        font-weight: 700;
+        padding: 0.55rem 0.9rem;
+        }
+
+        .user-folder-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+        gap: 0.85rem;
+        min-height: 180px;
+        }
+
+        .user-folder-empty {
+        grid-column: 1 / -1;
+        text-align: center;
+        color: #6f7294;
+        padding: 2.5rem 1rem;
+        border: 1px dashed rgba(8, 0, 89, 0.16);
+        border-radius: 14px;
+        background: rgba(8, 0, 89, 0.02);
+        }
+
+        .user-file-card {
+        border: 1px solid rgba(8, 0, 89, 0.1);
+        border-radius: 12px;
+        background: #fff;
+        padding: 0.55rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+        }
+
+        .user-file-preview {
+        height: 110px;
+        border-radius: 10px;
+        overflow: hidden;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #f8f9ff;
+        border: 1px solid rgba(8, 0, 89, 0.08);
+        text-decoration: none;
+        color: inherit;
+        }
+
+        .user-file-preview img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        }
+
+        .user-file-preview.is-pdf { background: rgba(220, 76, 100, 0.06); color: #b13a50; font-size: 2rem; }
+        .user-file-preview.is-file { color: #080059; font-size: 2rem; }
+
+        .user-file-name {
+        font-size: 0.78rem;
+        font-weight: 600;
+        color: #080059;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        margin: 0;
+        }
+
+        .user-file-delete {
+        width: 100%;
+        border: 1px solid rgba(220, 76, 100, 0.25);
+        border-radius: 8px;
+        background: rgba(220, 76, 100, 0.08);
+        color: #b13a50;
+        font-size: 0.75rem;
+        font-weight: 700;
+        padding: 0.35rem 0.4rem;
+        }
+
+        .user-file-delete:hover {
+        background: rgba(220, 76, 100, 0.16);
+        }
+
+        .user-folder-error {
+        font-size: 0.8rem;
+        color: #b13a50;
+        min-height: 1.1rem;
         }
 
         .dataTables_wrapper .dataTables_length select,
@@ -196,7 +307,7 @@
           </thead>
           <tbody>
             @foreach ($users as $user)
-            <tr data-user-id="{{ $user->id }}">
+            <tr data-user-id="{{ $user->id }}" data-user-name="{{ e($user->name) }}">
               <td>{{ $user->name }}</td>
               <td>{{ $user->email }}</td>
               <td>{{ $user->phone }}</td>
@@ -204,6 +315,7 @@
               <td><span class="table-chip role-{{ $user->role }}">{{ ucfirst($user->role) }}</span></td>
               <td><span class="table-chip status-{{ $user->status ? 'active' : 'inactive' }}">{{ $user->status ? 'Active' : 'Inactive' }}</span></td>
               <td>
+                <button class="action-btn folder-user" title="Open folder" type="button"><i class="fa-regular fa-folder"></i></button>
                 <button class="action-btn edit-user" title="Edit"><i class="fa-regular fa-pen-to-square"></i></button>
                 <button class="action-btn delete-user" title="Delete"><i class="fa-regular fa-trash-can"></i></button>
               </td>
@@ -301,6 +413,41 @@
     </div>
 </div>
 
+<div class="modal fade users-modal" id="userFolderModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title"><i class="fa-regular fa-folder-open me-2"></i><span id="userFolderTitle">User Folder</span></h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="user-folder-path">
+            <i class="fa-regular fa-folder"></i>
+            <span>user-details</span>
+            <span>/</span>
+            <strong id="userFolderName">user_id</strong>
+            <span>/</span>
+            <span>files</span>
+          </div>
+          <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+            <p class="mb-0 small text-secondary">Upload PDFs, images, or other documents for this user.</p>
+            <button class="btn btn-upload-docs" id="uploadUserDocsBtn" type="button">
+              <i class="fa-solid fa-cloud-arrow-up me-1"></i>Upload Documents
+            </button>
+            <input type="file" id="userFolderFiles" class="d-none" multiple accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,application/pdf">
+          </div>
+          <div class="user-folder-error" id="userFolderError"></div>
+          <div class="user-folder-grid" id="userFolderGrid">
+            <div class="user-folder-empty">No documents uploaded yet.</div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-outline-secondary" data-bs-dismiss="modal" type="button">Close</button>
+        </div>
+      </div>
+    </div>
+</div>
+
 @endsection
 
 @section('scripts')
@@ -311,9 +458,11 @@
   $(function () {
     const userModal = new bootstrap.Modal(document.getElementById("userModal"));
     const deleteUserModal = new bootstrap.Modal(document.getElementById("deleteUserModal"));
+    const userFolderModal = new bootstrap.Modal(document.getElementById("userFolderModal"));
     const table = $("#usersTable").DataTable();
     let pendingDeleteUserId = null;
     let pendingDeleteRowNode = null;
+    let pendingFolderUserId = null;
 
     const roleLabelMap = {
       foreman: "Foreman",
@@ -323,6 +472,7 @@
 
     function buildActionButtons() {
       return `
+        <button class="action-btn folder-user" title="Open folder" type="button"><i class="fa-regular fa-folder"></i></button>
         <button class="action-btn edit-user" title="Edit"><i class="fa-regular fa-pen-to-square"></i></button>
         <button class="action-btn delete-user" title="Delete"><i class="fa-regular fa-trash-can"></i></button>
       `;
@@ -419,7 +569,7 @@
               buildStatusChip(user.status ? 1 : 0),
               buildActionButtons(),
             ]).draw(false);
-            $(row.node()).attr("data-user-id", user.id);
+            $(row.node()).attr("data-user-id", user.id).attr("data-user-name", user.name);
           } else {
             const newRow = table.row.add([
               user.name,
@@ -431,7 +581,7 @@
               buildActionButtons(),
             ]).draw(false).node();
 
-            $(newRow).attr("data-user-id", user.id);
+            $(newRow).attr("data-user-id", user.id).attr("data-user-name", user.name);
           }
 
           userModal.hide();
@@ -515,6 +665,151 @@
       $("#userModalTitle").text("Edit User");
       $(".error-message").html("");
       userModal.show();
+    });
+
+    function escapeHtml(value) {
+      return String(value ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+    }
+
+    function folderSlug(name, id) {
+      const slug = String(name || "user")
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-+|-+$/g, "") || "user";
+      return `${slug}_${id}`;
+    }
+
+    function filePreviewHtml(doc) {
+      if (doc.is_image) {
+        return `<a class="user-file-preview" href="${doc.url}" target="_blank" rel="noopener"><img src="${doc.url}" alt="${escapeHtml(doc.name)}"></a>`;
+      }
+      if (doc.is_pdf) {
+        return `<a class="user-file-preview is-pdf" href="${doc.url}" target="_blank" rel="noopener"><i class="fa-regular fa-file-pdf"></i></a>`;
+      }
+      return `<a class="user-file-preview is-file" href="${doc.url}" target="_blank" rel="noopener"><i class="fa-regular fa-file-lines"></i></a>`;
+    }
+
+    function renderFolderDocuments(documents) {
+      const $grid = $("#userFolderGrid");
+      $grid.empty();
+
+      if (!documents || !documents.length) {
+        $grid.html('<div class="user-folder-empty">No documents uploaded yet.</div>');
+        return;
+      }
+
+      documents.forEach(function (doc) {
+        $grid.append(`
+          <div class="user-file-card" data-document-id="${doc.id}">
+            ${filePreviewHtml(doc)}
+            <p class="user-file-name" title="${escapeHtml(doc.name)}">${escapeHtml(doc.name)}</p>
+            <button class="user-file-delete" type="button">
+              <i class="fa-regular fa-trash-can me-1"></i>Delete
+            </button>
+          </div>
+        `);
+      });
+    }
+
+    function loadUserFolder(userId) {
+      $("#userFolderError").text("");
+      $("#userFolderGrid").html('<div class="user-folder-empty">Loading files...</div>');
+
+      $.ajax({
+        url: `{{ url('/users') }}/${userId}/documents`,
+        type: "GET",
+        success: function (response) {
+          const folder = response.data?.user?.folder || folderSlug($("#userFolderTitle").text(), userId);
+          $("#userFolderName").text(folder);
+          renderFolderDocuments(response.data?.documents || []);
+        },
+        error: function (xhr) {
+          $("#userFolderGrid").html('<div class="user-folder-empty">Unable to load documents.</div>');
+          $("#userFolderError").text(xhr.responseJSON?.message || "Unable to load documents.");
+        },
+      });
+    }
+
+    $("#usersTable tbody").on("click", ".folder-user", function () {
+      const $row = $(this).closest("tr");
+      const userId = $row.data("user-id");
+      const userName = $row.data("user-name") || cellText(table.row($row).data()?.[0]) || "User";
+
+      if (!userId) return;
+
+      pendingFolderUserId = userId;
+      $("#userFolderTitle").text(userName);
+      $("#userFolderName").text(folderSlug(userName, userId));
+      $("#userFolderError").text("");
+      userFolderModal.show();
+      loadUserFolder(userId);
+    });
+
+    $("#uploadUserDocsBtn").on("click", function () {
+      $("#userFolderFiles").trigger("click");
+    });
+
+    $("#userFolderFiles").on("change", function () {
+      const files = this.files;
+      if (!pendingFolderUserId || !files || !files.length) return;
+
+      const formData = new FormData();
+      formData.append("_token", "{{ csrf_token() }}");
+      Array.from(files).forEach(function (file) {
+        formData.append("files[]", file);
+      });
+
+      const btn = $("#uploadUserDocsBtn");
+      btn.prop("disabled", true).html('<i class="fa-solid fa-spinner fa-spin me-1"></i>Uploading...');
+      $("#userFolderError").text("");
+
+      $.ajax({
+        url: `{{ url('/users') }}/${pendingFolderUserId}/documents`,
+        type: "POST",
+        data: formData,
+        processData: false,
+        contentType: false,
+        success: function () {
+          loadUserFolder(pendingFolderUserId);
+        },
+        error: function (xhr) {
+          const errors = xhr.responseJSON?.errors;
+          const firstError = errors ? Object.values(errors)[0]?.[0] : null;
+          $("#userFolderError").text(firstError || xhr.responseJSON?.message || "Unable to upload documents.");
+        },
+        complete: function () {
+          btn.prop("disabled", false).html('<i class="fa-solid fa-cloud-arrow-up me-1"></i>Upload Documents');
+          $("#userFolderFiles").val("");
+        },
+      });
+    });
+
+    $("#userFolderGrid").on("click", ".user-file-delete", function () {
+      if (!pendingFolderUserId) return;
+
+      const $card = $(this).closest(".user-file-card");
+      const documentId = $card.data("document-id");
+      if (!documentId || !confirm("Delete this document?")) return;
+
+      const btn = $(this);
+      btn.prop("disabled", true).text("Deleting...");
+
+      $.ajax({
+        url: `{{ url('/users') }}/${pendingFolderUserId}/documents/${documentId}`,
+        type: "DELETE",
+        data: { _token: "{{ csrf_token() }}" },
+        success: function () {
+          loadUserFolder(pendingFolderUserId);
+        },
+        error: function (xhr) {
+          $("#userFolderError").text(xhr.responseJSON?.message || "Unable to delete document.");
+          btn.prop("disabled", false).html('<i class="fa-regular fa-trash-can me-1"></i>Delete');
+        },
+      });
     });
 
     $("#userModal").on("hidden.bs.modal", function () {
