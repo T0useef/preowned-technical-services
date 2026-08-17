@@ -9,13 +9,15 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('expense_receipts', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('expense_id')->constrained()->cascadeOnDelete();
-            $table->string('file_path');
-            $table->string('original_name');
-            $table->timestamps();
-        });
+        if (!Schema::hasTable('expense_receipts')) {
+            Schema::create('expense_receipts', function (Blueprint $table) {
+                $table->id();
+                $table->foreignId('expense_id')->constrained()->cascadeOnDelete();
+                $table->string('file_path');
+                $table->string('original_name');
+                $table->timestamps();
+            });
+        }
 
         if (Schema::hasColumn('expenses', 'receipt_path')) {
             $legacyExpenses = DB::table('expenses')

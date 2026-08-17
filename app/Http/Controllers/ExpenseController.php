@@ -7,7 +7,6 @@ use App\Models\ExpenseReceipt;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
-use Illuminate\Validation\ValidationException;
 
 class ExpenseController extends Controller
 {
@@ -35,7 +34,7 @@ class ExpenseController extends Controller
             'expense_date' => 'required|date',
             'price' => 'required|numeric|min:0',
             'description' => 'required|string|max:2000',
-            'receipts' => 'required|array|min:1',
+            'receipts' => 'nullable|array',
             'receipts.*' => 'file|mimes:jpg,jpeg,png,webp,pdf|max:5120',
         ]);
 
@@ -86,12 +85,6 @@ class ExpenseController extends Controller
         foreach ($request->file('receipts', []) as $file) {
             $stored = $this->storeReceiptFile($file, $validated['expense_date']);
             $expense->receipts()->create($stored);
-        }
-
-        if ($expense->receipts()->count() === 0) {
-            throw ValidationException::withMessages([
-                'receipts' => 'At least one receipt is required.',
-            ]);
         }
 
         $expense->update([

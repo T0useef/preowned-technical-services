@@ -442,7 +442,7 @@
             <span class="text-danger error-message" id="expenseDescription-error"></span>
           </div>
           <div class="mb-0">
-            <label class="form-label">Receipts</label>
+            <label class="form-label">Receipts <span class="text-muted fw-normal">(optional)</span></label>
             <div class="receipt-dropzone" id="receiptDropzone">
               <input type="file" id="expenseReceipt" accept="image/*,.pdf,application/pdf" multiple>
               <div class="receipt-dropzone-icon">
