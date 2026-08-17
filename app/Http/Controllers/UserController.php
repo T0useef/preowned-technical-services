@@ -5,10 +5,12 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\User;
 use App\Models\UserDocument;
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use PhpOffice\PhpSpreadsheet\IOFactory;
@@ -88,21 +90,48 @@ class UserController extends Controller
     {
         set_time_limit(300);
         ini_set('max_execution_time', '300');
+        ini_set('memory_limit', '512M');
 
         $request->validate([
-            'file' => 'required|file|mimes:xlsx,xls,csv|max:5120',
+            'file' => 'required|file|max:5120',
         ]);
 
-        $filePath = $request->file('file')->getRealPath();
-        $reader = IOFactory::createReaderForFile($filePath);
-        if (method_exists($reader, 'setReadDataOnly')) {
-            $reader->setReadDataOnly(true);
+        $uploaded = $request->file('file');
+        $extension = strtolower($uploaded->getClientOriginalExtension() ?: '');
+        if (!in_array($extension, ['xlsx', 'xls', 'csv'], true)) {
+            throw ValidationException::withMessages([
+                'file' => 'The file must be an Excel or CSV file (.xlsx, .xls, .csv).',
+            ]);
         }
-        $spreadsheet = $reader->load($filePath);
-        $sheet = $spreadsheet->getActiveSheet();
-        $rows = $sheet->toArray(null, true, false, false);
-        $spreadsheet->disconnectWorksheets();
-        unset($spreadsheet);
+
+        $tempDir = storage_path('app/imports');
+        File::ensureDirectoryExists($tempDir);
+        $tempPath = $tempDir.DIRECTORY_SEPARATOR.uniqid('users-', true).'.'.$extension;
+
+        try {
+            File::copy($uploaded->getPathname(), $tempPath);
+
+            $reader = IOFactory::createReaderForFile($tempPath);
+            if (method_exists($reader, 'setReadDataOnly')) {
+                $reader->setReadDataOnly(true);
+            }
+            $spreadsheet = $reader->load($tempPath);
+            $sheet = $spreadsheet->getActiveSheet();
+            $rows = $sheet->toArray(null, true, false, false);
+            $spreadsheet->disconnectWorksheets();
+            unset($spreadsheet);
+        } catch (ValidationException $e) {
+            throw $e;
+        } catch (\Throwable $e) {
+            report($e);
+            throw ValidationException::withMessages([
+                'file' => $this->excelImportErrorMessage($e),
+            ]);
+        } finally {
+            if (is_file($tempPath)) {
+                File::delete($tempPath);
+            }
+        }
 
         if (count($rows) < 2) {
             throw ValidationException::withMessages([
@@ -185,15 +214,27 @@ class UserController extends Controller
             ]);
         }
 
-        $createdUsers = DB::transaction(function () use ($payloads) {
-            foreach (array_chunk($payloads, 200) as $chunk) {
-                User::insert($chunk);
-            }
+        $this->dropUsersNameUniqueIndex();
 
-            $emails = array_column($payloads, 'email');
+        try {
+            $createdUsers = DB::transaction(function () use ($payloads) {
+                foreach (array_chunk($payloads, 200) as $chunk) {
+                    User::insert($chunk);
+                }
 
-            return User::whereIn('email', $emails)->get();
-        });
+                $created = collect();
+                foreach (array_chunk(array_column($payloads, 'email'), 200) as $emailChunk) {
+                    $created = $created->merge(User::whereIn('email', $emailChunk)->get());
+                }
+
+                return $created->values();
+            });
+        } catch (QueryException $e) {
+            report($e);
+            throw ValidationException::withMessages([
+                'file' => $this->excelImportErrorMessage($e),
+            ]);
+        }
 
         return response()->json([
             'message' => $createdUsers->count() . ' user(s) imported successfully.',
@@ -393,6 +434,43 @@ class UserController extends Controller
         if (File::exists($absolutePath)) {
             File::delete($absolutePath);
         }
+    }
+
+    private function dropUsersNameUniqueIndex(): void
+    {
+        foreach (Schema::getIndexes('users') as $index) {
+            $columns = $index['columns'] ?? [];
+            $isNameUnique = ($index['unique'] ?? false)
+                && !($index['primary'] ?? false)
+                && $columns === ['name'];
+
+            if (!$isNameUnique) {
+                continue;
+            }
+
+            Schema::table('users', function ($table) use ($index) {
+                $table->dropUnique($index['name']);
+            });
+        }
+    }
+
+    private function excelImportErrorMessage(\Throwable $e): string
+    {
+        $message = $e->getMessage();
+
+        if (str_contains($message, 'ZipArchive')) {
+            return 'The server cannot read .xlsx files. Please install PHP zip support, or upload a .csv file.';
+        }
+
+        if (str_contains($message, 'users_name_unique') || (str_contains($message, 'Duplicate entry') && str_contains($message, 'name'))) {
+            return 'A unique name rule is still on the database. Run migrations, then try again.';
+        }
+
+        if (str_contains($message, 'users_email_unique') || (str_contains($message, 'Duplicate entry') && str_contains($message, 'email'))) {
+            return 'One or more emails already exist. Remove duplicate emails and try again.';
+        }
+
+        return 'Unable to import the Excel file. Please check the file and try again.';
     }
 
     private function formatDocument(UserDocument $document): array
