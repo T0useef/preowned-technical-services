@@ -35,7 +35,12 @@
           </div>
         </div>
         <div class="topbar-actions">
-          <button class="btn btn-danger text-white" id="logoutBtn"><i class="fa-solid fa-right-from-bracket me-1"></i>Logout</button>
+          <form method="POST" action="{{ route('logout') }}" class="d-inline">
+            @csrf
+            <button type="submit" class="btn btn-danger text-white">
+              <i class="fa-solid fa-right-from-bracket me-1"></i>Logout
+            </button>
+          </form>
         </div>
       </header>
 
