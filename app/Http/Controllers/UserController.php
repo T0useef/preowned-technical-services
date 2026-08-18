@@ -21,7 +21,10 @@ class UserController extends Controller
 {
     public function index()
     {
-        $users = User::where('id', '!=', Auth::id())->latest()->get();
+        $users = User::where('id', '!=', Auth::id())
+            ->withCount('documents')
+            ->latest()
+            ->get();
 
         return view('users.index', [
             'users' => $users,

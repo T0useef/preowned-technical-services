@@ -229,6 +229,28 @@
         background: #fff;
         }
 
+        .user-document-filter-wrap {
+        display: flex;
+        align-items: center;
+        gap: 0.55rem;
+        margin-bottom: 0.9rem;
+        }
+
+        .user-document-filter-wrap .form-label {
+        margin: 0;
+        color: #080059;
+        font-weight: 600;
+        font-size: 0.86rem;
+        white-space: nowrap;
+        }
+
+        .user-document-filter {
+        max-width: 220px;
+        border-radius: 10px;
+        border: 1px solid rgba(8, 0, 89, 0.16);
+        min-height: 38px;
+        }
+
         .dataTables_wrapper .dataTables_paginate .paginate_button.page-item.active .page-link {
         background: #080059;
         border-color: #080059;
@@ -322,6 +344,15 @@
 
       <div id="userImportAlert" class="alert d-none mb-3" role="alert"></div>
 
+      <div class="user-document-filter-wrap">
+        <label class="form-label" for="userDocumentFilter">Documents</label>
+        <select class="form-select user-document-filter" id="userDocumentFilter">
+          <option value="">All users</option>
+          <option value="with">With document</option>
+          <option value="without">Without document</option>
+        </select>
+      </div>
+
       <div class="table-responsive">
         <table id="usersTable" class="table align-middle mb-0">
           <thead>
@@ -337,7 +368,7 @@
           </thead>
           <tbody>
             @foreach ($users as $user)
-            <tr data-user-id="{{ $user->id }}" data-user-name="{{ e($user->name) }}">
+            <tr data-user-id="{{ $user->id }}" data-user-name="{{ e($user->name) }}" data-has-documents="{{ $user->documents_count > 0 ? 1 : 0 }}">
               <td>{{ $user->name }}</td>
               <td>{{ $user->email }}</td>
               <td>{{ $user->phone }}</td>
@@ -494,6 +525,24 @@
     let pendingDeleteRowNode = null;
     let pendingFolderUserId = null;
 
+    $.fn.dataTable.ext.search.push(function (settings, _data, dataIndex) {
+      if (settings.nTable.id !== "usersTable") {
+        return true;
+      }
+
+      const filter = $("#userDocumentFilter").val();
+      if (!filter) {
+        return true;
+      }
+
+      const hasDocuments = $(table.row(dataIndex).node()).attr("data-has-documents") === "1";
+      return filter === "with" ? hasDocuments : !hasDocuments;
+    });
+
+    $("#userDocumentFilter").on("change", function () {
+      table.draw();
+    });
+
     const roleLabelMap = {
       foreman: "Foreman",
       driver: "Driver",
@@ -568,7 +617,7 @@
         buildActionButtons(),
       ]).draw(false).node();
 
-      $(newRow).attr("data-user-id", user.id).attr("data-user-name", user.name);
+      $(newRow).attr("data-user-id", user.id).attr("data-user-name", user.name).attr("data-has-documents", "0");
     }
 
     function showImportAlert(message, isWarning) {
@@ -656,6 +705,7 @@
           if (isEdit) {
             const rowNode = $(`#usersTable tbody tr[data-user-id="${user.id}"]`);
             const row = table.row(rowNode);
+            const hasDocuments = $(row.node()).attr("data-has-documents") || "0";
             row.data([
               user.name,
               user.email,
@@ -665,7 +715,7 @@
               buildStatusChip(user.status ? 1 : 0),
               buildActionButtons(),
             ]).draw(false);
-            $(row.node()).attr("data-user-id", user.id).attr("data-user-name", user.name);
+            $(row.node()).attr("data-user-id", user.id).attr("data-user-name", user.name).attr("data-has-documents", hasDocuments);
           } else {
             appendUserRow(user);
           }
@@ -779,6 +829,16 @@
       return `<a class="user-file-preview is-file" href="${doc.url}" target="_blank" rel="noopener"><i class="fa-regular fa-file-lines"></i></a>`;
     }
 
+    function setUserHasDocuments(userId, hasDocuments) {
+      const $row = $(`#usersTable tbody tr[data-user-id="${userId}"]`);
+      if (!$row.length) {
+        return;
+      }
+
+      $row.attr("data-has-documents", hasDocuments ? "1" : "0");
+      table.draw(false);
+    }
+
     function renderFolderDocuments(documents) {
       const $grid = $("#userFolderGrid");
       $grid.empty();
@@ -812,6 +872,7 @@
           const folder = response.data?.user?.folder || folderSlug($("#userFolderTitle").text(), userId);
           $("#userFolderName").text(folder);
           renderFolderDocuments(response.data?.documents || []);
+          setUserHasDocuments(userId, (response.data?.documents || []).length > 0);
         },
         error: function (xhr) {
           $("#userFolderGrid").html('<div class="user-folder-empty">Unable to load documents.</div>');
