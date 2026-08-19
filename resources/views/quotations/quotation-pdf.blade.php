@@ -429,9 +429,7 @@
         @endphp
 
         <div class="page{{ $isLast ? '' : ' page-break' }}">
-            @if(!empty($letterhead))
-                <img class="letterhead-bg" src="{{ $letterhead }}" alt="">
-            @endif
+            <img class="letterhead-bg" src="{{ $letterhead }}" alt="">
             <div class="content">
                 @if($isFirst)
                     <table class="header-cover">

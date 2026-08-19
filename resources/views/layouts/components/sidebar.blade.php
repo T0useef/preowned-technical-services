@@ -12,7 +12,6 @@
       <a class="nav-link {{ request()->is('users*') ? 'active' : '' }}" href="{{ route('users.index') }}"><i class="fa-solid fa-users"></i>Users</a>
       <a class="nav-link {{ request()->is('dashboard/projects*') ? 'active' : '' }}" href="{{ route('dashboard.projects.index') }}"><i class="fa-solid fa-diagram-project"></i>Projects</a>
       <a class="nav-link {{ request()->is('dashboard/quotations*') ? 'active' : '' }}" href="{{ route('dashboard.quotations.index') }}"><i class="fa-solid fa-file-invoice"></i>Quotations</a>
-      <a class="nav-link {{ request()->is('dashboard/expenses*') ? 'active' : '' }}" href="{{ route('dashboard.expenses.index') }}"><i class="fa-solid fa-receipt"></i>Expenses</a>
       <a
         class="nav-link d-flex justify-content-between align-items-center {{ request()->is('dashboard/payments*') ? 'active' : '' }}"
         data-bs-toggle="collapse"
