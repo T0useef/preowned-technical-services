@@ -182,6 +182,9 @@
           <button type="button" class="btn quick-action-btn secondary" id="openOvertimeHoursModal">
             <i class="fa-solid fa-business-time me-1"></i>Add Overtime Hours
           </button>
+          <a href="{{ route('dashboard.attendance.preview') }}" class="btn quick-action-btn secondary" id="downloadAttendanceSheet">
+            <i class="fa-solid fa-file-arrow-down me-1"></i>Download Attendance Sheet
+          </a>
         </div>
       </div>
 

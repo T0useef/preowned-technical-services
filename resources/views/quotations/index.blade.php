@@ -38,7 +38,35 @@
   .action-btn.delete-quotation:hover { color: #d94b6e; border-color: #d94b6e; }
   .action-btn.view-quotation:hover { color: #2874d9; border-color: #2874d9; }
   .action-btn.edit-quotation:hover { color: #080059; border-color: #eabc73; }
-  .action-btn.download-quotation-pdf:hover { color: #1f7a58; border-color: #1f7a58; }
+  .action-btn.download-quotation:hover { color: #1f7a58; border-color: #1f7a58; }
+  .download-option-btn {
+    width: 100%;
+    border: 1px solid rgba(8, 0, 89, 0.12);
+    border-radius: 12px;
+    background: #fff;
+    color: #080059;
+    font-weight: 600;
+    padding: 0.85rem 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    text-align: left;
+    transition: all 0.2s ease;
+  }
+  .download-option-btn:hover {
+    border-color: #eabc73;
+    background: rgba(234, 188, 115, 0.12);
+    color: #080059;
+  }
+  .download-option-btn i {
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+    background: rgba(8, 0, 89, 0.06);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
   .quotations-modal .modal-content { border-radius: 16px; border: 1px solid rgba(8, 0, 89, 0.09); overflow: hidden; }
   .quotations-modal .modal-header { border-bottom: 1px solid rgba(8, 0, 89, 0.08); background: linear-gradient(130deg, #080059, #1c109f); color: #fff; }
   .quotations-modal .btn-save { background: linear-gradient(120deg, #eabc73, #f2d39e); color: #080059; border: none; font-weight: 700; }
@@ -143,12 +171,10 @@
             <td>{{ $quotation->items->count() }}</td>
             <td>{{ number_format($quotation->total_amount, 2) }}</td>
             <td>
-              <button class="action-btn view-quotation" title="View details"><i class="fa-regular fa-eye"></i></button>
-              @if($quotation->file_path)
-              <a class="action-btn download-quotation-pdf" href="{{ asset($quotation->file_path) }}" target="_blank" rel="noopener" title="Download PDF"><i class="fa-regular fa-file-pdf"></i></a>
-              @endif
+              <button class="action-btn view-quotation" title="View details" type="button"><i class="fa-regular fa-eye"></i></button>
+              <button class="action-btn download-quotation" title="Download" type="button"><i class="fa-solid fa-download"></i></button>
               <a class="action-btn edit-quotation" href="{{ route('dashboard.quotations.edit', $quotation) }}" title="Edit"><i class="fa-regular fa-pen-to-square"></i></a>
-              <button class="action-btn delete-quotation" title="Delete"><i class="fa-regular fa-trash-can"></i></button>
+              <button class="action-btn delete-quotation" title="Delete" type="button"><i class="fa-regular fa-trash-can"></i></button>
             </td>
           </tr>
           @endforeach
@@ -255,6 +281,32 @@
     </div>
   </div>
 </div>
+<div class="modal fade quotations-modal" id="downloadQuotationModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Download Quotation</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <p class="mb-3 text-secondary" style="font-size:0.9rem;">Choose how you want to download <strong id="downloadQuotationLabel">this quotation</strong>.</p>
+        <div class="d-grid gap-2">
+          <button type="button" class="download-option-btn" data-download-option="with-letterhead">
+            <i class="fa-regular fa-file-lines"></i>
+            <span>With Letterhead</span>
+          </button>
+          <button type="button" class="download-option-btn" data-download-option="without-letterhead">
+            <i class="fa-regular fa-file"></i>
+            <span>Without Letterhead</span>
+          </button>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline-secondary" data-bs-dismiss="modal" type="button">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
 @endsection
 
 @section('scripts')
@@ -264,9 +316,11 @@
   $(function () {
     const viewQuotationModal = new bootstrap.Modal(document.getElementById("viewQuotationModal"));
     const deleteQuotationModal = new bootstrap.Modal(document.getElementById("deleteQuotationModal"));
+    const downloadQuotationModal = new bootstrap.Modal(document.getElementById("downloadQuotationModal"));
     const table = $("#quotationsTable").DataTable({ order: [[2, "desc"]] });
     let pendingDeleteQuotationId = null;
     let pendingDeleteRowNode = null;
+    let pendingDownloadQuotationId = null;
 
     function cellText(value) {
       if (typeof value !== "string") return value ?? "";
@@ -355,6 +409,31 @@
         populateDetailsModal(response.data, response.file_url);
         viewQuotationModal.show();
       });
+    });
+
+    $("#quotationsTable tbody").on("click", ".download-quotation", function () {
+      const rowNode = $(this).closest("tr");
+      const quotationId = rowNode.data("quotation-id");
+      const row = table.row(rowNode);
+      const data = row.data();
+
+      if (!quotationId) return;
+
+      pendingDownloadQuotationId = quotationId;
+      $("#downloadQuotationLabel").text(cellText(data[0]) + " — " + cellText(data[1]));
+      downloadQuotationModal.show();
+    });
+
+    $("#downloadQuotationModal").on("click", ".download-option-btn", function () {
+      if (!pendingDownloadQuotationId) return;
+
+      const option = $(this).data("download-option");
+      const withLetterhead = option === "with-letterhead" ? 1 : 0;
+      const url = `{{ url('/dashboard/quotations') }}/${pendingDownloadQuotationId}/download?letterhead=${withLetterhead}`;
+
+      window.location.href = url;
+      downloadQuotationModal.hide();
+      pendingDownloadQuotationId = null;
     });
 
     $("#quotationsTable tbody").on("click", ".delete-quotation", function () {
